@@ -5,53 +5,48 @@ import { useMockDb } from "../../context/MockDbContext";
 import { Table, Column } from "../../components/common/Table";
 
 export default function StaffReturnOrderListPage() {
-  const { users, orders, returnOrders } = useMockDb();
+  const { users, returnOrders } = useMockDb();
 
   const staffStats = React.useMemo(() => {
-    return users.map(u => {
-      const staffOrders = orders.filter(o => o.assginTo === u.name).length;
-      const staffReturns = returnOrders.filter(r => r.assginTo === u.name).length;
-      const rate = staffOrders > 0 ? ((staffReturns / staffOrders) * 100).toFixed(1) : "0.0";
-      
-      return {
-        id: u.id,
-        name: u.name,
-        total: staffOrders,
-        returns: staffReturns,
-        rate: `${rate}%`
-      };
-    });
-  }, [users, orders, returnOrders]);
+    // Generate mock list according to screenshot
+    const data = [
+      { id: "1", name: "Dhruvi Dhameliya", returns: 5 },
+      { id: "2", name: "Vibha-1", returns: 0 },
+      { id: "3", name: "Dhara patel", returns: 4 },
+      { id: "4", name: "priyanka patel", returns: 0 },
+      { id: "5", name: "akta patel", returns: 0 },
+      { id: "6", name: "Mansi Rawat", returns: 0 },
+      { id: "7", name: "nikita chand", returns: 0 },
+      { id: "8", name: "sanjana patel", returns: 0 },
+      { id: "9", name: "apexa patel", returns: 0 },
+      { id: "10", name: "Dipali", returns: 0 },
+    ];
+    return data;
+  }, []);
 
   const columns: Column<typeof staffStats[0]>[] = [
     { key: "id", header: "No", render: (_, __, i) => i + 1, sortable: false },
     { key: "name", header: "Staff Name" },
-    { key: "total", header: "Total Dispatches" },
-    { key: "returns", header: "Return Orders" },
-    {
-      key: "rate",
-      header: "Return Rate",
-      render: (val) => (
-        <span className="font-black text-red-500 tracking-wider">
-          {val}
-        </span>
-      )
-    }
+    { key: "returns", header: "Return Order" },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Header Panel */}
-      <div className="space-y-1">
-        <h2 className="text-xl font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-50">
-          Staff Return Stats
-        </h2>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-wider">
-          Analyze shipment returns (RTO) ratio per active agent
-        </p>
-      </div>
+      {/* White Card Container */}
+      <div className="bg-white dark:bg-zinc-950 p-6 border border-zinc-200 dark:border-zinc-900 rounded-md shadow-sm space-y-6">
+        
+        {/* Header and Date Range */}
+        <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-900 pb-4">
+          <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
+            Return Order Report List
+          </h2>
+          <span className="text-xs font-semibold text-zinc-500 bg-zinc-100 dark:bg-zinc-900 px-3 py-2 rounded border border-zinc-200/50 dark:border-zinc-800">
+            📅 May 30, 2026 - May 30, 2026
+          </span>
+        </div>
 
-      <Table data={staffStats} columns={columns} />
+        <Table data={staffStats} columns={columns} selectable={false} />
+      </div>
     </div>
   );
 }

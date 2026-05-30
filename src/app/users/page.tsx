@@ -7,6 +7,7 @@ import { Delete, Add, Edit } from "@mui/icons-material";
 import { Modal } from "../../components/common/Modal";
 import { Input } from "../../components/common/Input";
 import { Select } from "../../components/common/Select";
+import { Button } from "../../components/common/Button";
 
 export default function UsersPage() {
   const { users, addUser, updateUser, deleteUser } = useMockDb();
@@ -134,39 +135,60 @@ export default function UsersPage() {
       <Table data={users} columns={columns} />
 
       {/* Add User Modal */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Create User Account">
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Add User" sizeClass="max-w-4xl">
         <form onSubmit={handleCreate} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
-            <Input label="Email Address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            {/* Left Column */}
+            <div className="space-y-4">
+              <Input label="Name" placeholder="Enter Name" value={name} onChange={(e) => setName(e.target.value)} required />
+              <Input label="Mobile Number" placeholder="Enter Mobile Number" value={mobile} onChange={(e) => setMobile(e.target.value)} required />
+              <Input label="Aadhar Card" placeholder="Enter Aadhar Card" value={aadhar} onChange={(e) => setAadhar(e.target.value)} required />
+              <Input label="Bank Number" placeholder="Enter Bank Number" value={bankNo} onChange={(e) => setBankNo(e.target.value)} required />
+              <Input label="Confirm Password" placeholder="Enter Confirm Password" type="password" required />
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-4">
+              <Input label="Email" placeholder="Enter Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Input label="Company Number" placeholder="Enter Company Number" value={companyNo} onChange={(e) => setCompanyNo(e.target.value)} required />
+              
+              {/* Check Photo File Input */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">
+                  Check Photo
+                </label>
+                <div className="flex items-center">
+                  <label className="flex items-center justify-center px-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-l cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-xs text-zinc-700 dark:text-zinc-300 border-r-0">
+                    Choose File
+                    <input type="file" className="hidden" />
+                  </label>
+                  <div className="flex-1 px-3 py-2 text-xs text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-r border-l-0">
+                    No file chosen
+                  </div>
+                </div>
+              </div>
+
+              <Input label="Password" placeholder="Enter Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <Select
+                label="Role"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                options={[
+                  { value: "Admin", label: "Admin" },
+                  { value: "Staff", label: "Staff" }
+                ]}
+              />
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Mobile Number" value={mobile} onChange={(e) => setMobile(e.target.value)} required />
-            <Input label="Company Emp ID" value={companyNo} onChange={(e) => setCompanyNo(e.target.value)} required />
+          <div className="flex justify-end pt-2">
+            <Button
+              type="submit"
+              variant="primary"
+              className="bg-teal-800 hover:bg-teal-700 focus:ring-teal-800 px-8"
+            >
+              Save
+            </Button>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Aadhar Card" value={aadhar} onChange={(e) => setAadhar(e.target.value)} required />
-            <Input label="Bank A/C Number" value={bankNo} onChange={(e) => setBankNo(e.target.value)} required />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            <Select
-              label="Assigned Role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              options={[
-                { value: "Agent", label: "Sales Agent" },
-                { value: "Manager", label: "Manager" },
-                { value: "Superadmin", label: "Super Admin Owner" }
-              ]}
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold uppercase tracking-wider text-xs rounded-md shadow transition-all"
-          >
-            Register Account
-          </button>
         </form>
       </Modal>
 

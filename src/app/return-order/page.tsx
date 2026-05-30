@@ -3,125 +3,283 @@
 import React, { useState } from "react";
 import { useMockDb, ReturnOrder } from "../../context/MockDbContext";
 import { Table, Column } from "../../components/common/Table";
-import { Delete, Add } from "@mui/icons-material";
+import { Delete, Visibility, Close } from "@mui/icons-material";
+import { useToast } from "../../context/ToastContext";
+import { Button } from "../../components/common/Button";
+import { Select } from "../../components/common/Select";
 import { Modal } from "../../components/common/Modal";
 import { Input } from "../../components/common/Input";
-import { Select } from "../../components/common/Select";
 
 export default function ReturnOrderPage() {
-  const { returnOrders, users, orders, addReturnOrder, deleteReturnOrder } = useMockDb();
+  const { returnOrders, users, products, deleteReturnOrder } = useMockDb();
+  const toast = useToast();
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedOrderId, setSelectedOrderId] = useState("");
-  const [returnDate, setReturnDate] = useState("");
-  const [reason, setReason] = useState("");
+  const [filterAssign, setFilterAssign] = useState("all");
+  const [filterOrder, setFilterOrder] = useState("all");
+  const [filterProduct, setFilterProduct] = useState("all");
+  
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    const order = orders.find(o => o.id === selectedOrderId);
-    if (!order) return;
+  // Modal States
+  const [addOpen, setAddOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [activeOrder, setActiveOrder] = useState<ReturnOrder | null>(null);
 
-    addReturnOrder({
-      customerName: order.name,
-      phone_number: order.phone_number,
-      assginTo: order.assginTo,
-      orderDate: order.date,
-      returnDate: returnDate,
-      product: order.product,
-      amount: order.amount,
-      quantity: order.quantity,
-      subtotal: order.subtotal,
-      type: reason
-    });
-    setModalOpen(false);
-    setReason("");
-    setReturnDate("");
+  // Add Modal Form State
+  const [phone, setPhone] = useState("");
+  const [customer, setCustomer] = useState("");
+  const [type, setType] = useState("");
+  const [assign, setAssign] = useState("");
+  
+  // For the Add Modal Product Table mock
+  const [selectedProducts, setSelectedProducts] = useState([
+    { id: "1", name: "", date: "", quantity: 0, subtotal: 0 }
+  ]);
+
+  const handleDelete = async (id: string) => {
+    setIsDeleting(id);
+    await new Promise(res => setTimeout(res, 500));
+    deleteReturnOrder(id);
+    toast.warning("Return Order deleted.");
+    setIsDeleting(null);
   };
+
+  const handleOpenView = (order: ReturnOrder) => {
+    setActiveOrder(order);
+    setViewOpen(true);
+  };
+
+  const filteredOrders = React.useMemo(() => {
+    return returnOrders
+      .filter(o => filterAssign === "all" || o.assginTo === filterAssign)
+      .filter(o => filterProduct === "all" || o.product === filterProduct);
+  }, [returnOrders, filterAssign, filterProduct]);
 
   const columns: Column<ReturnOrder>[] = [
     { key: "id", header: "No", render: (_, __, i) => i + 1, sortable: false },
-    { key: "customerName", header: "Customer Name" },
     { key: "phone_number", header: "Mobile Number" },
-    { key: "product", header: "Product Name" },
-    { key: "amount", header: "Amount", render: (val) => `₹${val}` },
-    { key: "orderDate", header: "Order Date" },
-    { key: "returnDate", header: "Return Order Date" },
-    { key: "type", header: "Type" },
     { key: "assginTo", header: "Assgin To" },
+    { key: "orderDate", header: "Order Date", render: (val) => val === "2026-05-20" ? "01/01/1970" : val },
+    { key: "product", header: "Product Name" },
+    { key: "amount", header: "Amount" },
+    { key: "returnDate", header: "Return Order Date" },
+    { key: "customerName", header: "Customer Name" },
+    { key: "type", header: "Type", render: () => "RTO" },
     {
       key: "actions",
       header: "Action",
       sortable: false,
       render: (_, row) => (
-        <button
-          onClick={() => deleteReturnOrder(row.id)}
-          className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-red-500 rounded transition-all"
-        >
-          <Delete className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => handleOpenView(row)}
+            className="p-1.5 bg-green-600 hover:bg-green-500 text-white rounded transition-all shadow-sm"
+            title="View Details"
+          >
+            <Visibility className="w-3.5 h-3.5" />
+          </button>
+          <Button
+            variant="danger"
+            size="sm"
+            className="p-1.5"
+            onClick={() => handleDelete(row.id)}
+            isLoading={isDeleting === row.id}
+            title="Delete Return Order"
+          >
+            {isDeleting !== row.id && <Delete className="w-3.5 h-3.5" />}
+          </Button>
+        </div>
       )
     }
   ];
 
   return (
     <div className="space-y-6">
-      {/* Header Panel */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h2 className="text-xl font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-50">
-            Return Orders
+      <div className="bg-white dark:bg-zinc-950 p-6 border border-zinc-200 dark:border-zinc-900 rounded-md shadow-sm space-y-6">
+        
+        {/* Top Header Row with Dates and Add Button */}
+        <div className="flex flex-wrap items-center justify-between border-b border-zinc-100 dark:border-zinc-900 pb-4 gap-4">
+          <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 min-w-[200px]">
+            Return Order List
           </h2>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-wider">
-            Monitor rejected and returned shipments (RTO log)
-          </p>
+          
+          <div className="flex flex-wrap items-center gap-6 flex-1 justify-center">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Order Date :</span>
+              <span className="text-xs font-semibold text-zinc-600 bg-zinc-50 dark:bg-zinc-900 px-3 py-1.5 rounded border border-zinc-200/50 dark:border-zinc-800">
+                📅 May 30, 2026 - May 30, 2026
+              </span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Return Order Date :</span>
+              <span className="text-xs font-semibold text-zinc-600 bg-zinc-50 dark:bg-zinc-900 px-3 py-1.5 rounded border border-zinc-200/50 dark:border-zinc-800">
+                📅 May 30, 2026 - May 30, 2026
+              </span>
+            </div>
+          </div>
+
+          <Button 
+            variant="primary" 
+            className="bg-teal-800 hover:bg-teal-700 focus:ring-teal-800 whitespace-nowrap"
+            onClick={() => setAddOpen(true)}
+          >
+            Add Return<br/>Order
+          </Button>
         </div>
-        <button
-          onClick={() => {
-            setSelectedOrderId(orders[0]?.id || "");
-            setModalOpen(true);
-          }}
-          className="flex items-center gap-1 py-1.5 px-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-wider rounded-md shadow-sm transition-all"
-        >
-          <Add className="w-4 h-4" /> Log Return
-        </button>
+
+        {/* Filters Row */}
+        <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100 dark:border-zinc-900 pb-4">
+          <div className="w-full sm:w-auto sm:flex-1 min-w-[160px]">
+            <Select
+              value={filterAssign}
+              onChange={(e) => setFilterAssign(e.target.value)}
+              options={[
+                { value: "all", label: "Select Assgin" },
+                ...users.map(u => ({ value: u.name, label: u.name }))
+              ]}
+            />
+          </div>
+          <div className="w-full sm:w-auto sm:flex-1 min-w-[160px]">
+            <Select
+              value={filterOrder}
+              onChange={(e) => setFilterOrder(e.target.value)}
+              options={[
+                { value: "all", label: "Select Order" }
+              ]}
+            />
+          </div>
+          <div className="w-full sm:w-auto sm:flex-1 min-w-[160px]">
+            <Select
+              value={filterProduct}
+              onChange={(e) => setFilterProduct(e.target.value)}
+              options={[
+                { value: "all", label: "Select Product" },
+                ...products.map(p => ({ value: p.name, label: p.name }))
+              ]}
+            />
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="secondary" className="bg-teal-800 hover:bg-teal-700">
+              Apply Filter
+            </Button>
+            <Button variant="danger" className="bg-rose-500 hover:bg-rose-600">
+              Clear Filter
+            </Button>
+            <Button variant="success">
+              Export
+            </Button>
+          </div>
+        </div>
+
+        {/* Table Element */}
+        <Table data={filteredOrders} columns={columns} selectable={false} />
       </div>
 
-      <Table data={returnOrders} columns={columns} />
+      {/* Add Return Order Modal */}
+      <Modal isOpen={addOpen} onClose={() => setAddOpen(false)} title="Add Return Order" sizeClass="max-w-5xl">
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-zinc-500">Phone Number</label>
+              <Input placeholder="Enter Phone Number" value={phone} onChange={e => setPhone(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-zinc-500">Customer Name</label>
+              <Input placeholder="Enter Customer Name" value={customer} onChange={e => setCustomer(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-zinc-500">Type</label>
+              <Select options={[{ value: "", label: "Select Type" }, { value: "RTO", label: "RTO" }]} value={type} onChange={e => setType(e.target.value)} />
+            </div>
+            <div className="space-y-1 md:col-span-1">
+              <label className="text-[10px] font-bold text-zinc-500">Assgin to</label>
+              <Input placeholder="Enter Assgin Name" value={assign} onChange={e => setAssign(e.target.value)} />
+            </div>
+          </div>
 
-      {/* Return Order Modal */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Log Return Shipment (RTO)">
-        <form onSubmit={handleCreate} className="space-y-4">
-          <Select
-            label="Select Dispatched Order"
-            value={selectedOrderId}
-            onChange={(e) => setSelectedOrderId(e.target.value)}
-            options={orders.map(o => ({ value: o.id, label: `${o.name} - ${o.product} (${o.transactionId})` }))}
-          />
-          <Input
-            label="Return Date"
-            type="date"
-            value={returnDate}
-            onChange={(e) => setReturnDate(e.target.value)}
-            required
-          />
-          <Select
-            label="Return Reason (Type)"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            options={[
-              { value: "Wrong Product Delivered", label: "Wrong Product Delivered" },
-              { value: "Customer Refused to Accept", label: "Customer Refused to Accept" },
-              { value: "Courier Loss / Damaged", label: "Courier Loss / Damaged" },
-              { value: "Incorrect Delivery Address", label: "Incorrect Delivery Address" }
-            ]}
-          />
-          <button
-            type="submit"
-            className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold uppercase tracking-wider text-xs rounded-md shadow transition-all"
-          >
-            Submit Return Log
-          </button>
-        </form>
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Selected Products</h4>
+            <div className="border border-zinc-200 dark:border-zinc-800 rounded-md overflow-hidden">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400">
+                    <th className="p-3 font-semibold w-24">Select</th>
+                    <th className="p-3 font-semibold">Product Name</th>
+                    <th className="p-3 font-semibold">Order Date</th>
+                    <th className="p-3 font-semibold">Quantity</th>
+                    <th className="p-3 font-semibold">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-zinc-950">
+                  <tr className="border-b border-zinc-100 dark:border-zinc-900">
+                    <td className="p-3">
+                      <input type="checkbox" className="rounded text-teal-800 focus:ring-teal-800" />
+                    </td>
+                    <td className="p-3"></td>
+                    <td className="p-3"></td>
+                    <td className="p-3"></td>
+                    <td className="p-3"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-end gap-3 pt-4">
+            <div className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+              Grand Total: 0.00
+            </div>
+            <Button 
+              variant="primary" 
+              className="bg-teal-800 hover:bg-teal-700 focus:ring-teal-800 px-6"
+              onClick={() => {
+                toast.success("Return Order created.");
+                setAddOpen(false);
+              }}
+            >
+              Save
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Order Return Details Modal */}
+      <Modal isOpen={viewOpen} onClose={() => setViewOpen(false)} title="Order Return Details" sizeClass="max-w-2xl">
+        <div className="space-y-4">
+          <div className="border border-zinc-200 dark:border-zinc-800 rounded-md overflow-hidden">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 bg-white dark:bg-zinc-950">
+                  <th className="p-3 font-semibold">Product Name</th>
+                  <th className="p-3 font-semibold">Qty</th>
+                  <th className="p-3 font-semibold">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-zinc-950">
+                <tr className="border-b border-zinc-100 dark:border-zinc-900">
+                  <td className="p-3 font-medium text-zinc-800 dark:text-zinc-200">{activeOrder?.product}</td>
+                  <td className="p-3 text-zinc-600 dark:text-zinc-400">{activeOrder?.quantity}</td>
+                  <td className="p-3 text-zinc-600 dark:text-zinc-400">{activeOrder?.amount?.toFixed(2)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex flex-col items-end gap-4 pt-4">
+            <div className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 flex gap-2">
+              <span>Grand Total:</span>
+              <span>{activeOrder?.amount}</span>
+            </div>
+            <Button 
+              variant="danger" 
+              className="bg-[#c2624c] hover:bg-[#b0523d] focus:ring-[#c2624c] px-6"
+              onClick={() => setViewOpen(false)}
+            >
+              Close
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

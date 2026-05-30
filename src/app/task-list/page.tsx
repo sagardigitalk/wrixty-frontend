@@ -3,116 +3,66 @@
 import React, { useState } from "react";
 import { useMockDb, Task } from "../../context/MockDbContext";
 import { Table, Column } from "../../components/common/Table";
-import { Modal } from "../../components/common/Modal";
-import { Input } from "../../components/common/Input";
-import { Select } from "../../components/common/Select";
-import { Add, Delete } from "@mui/icons-material";
+import { Delete } from "@mui/icons-material";
+import { useToast } from "../../context/ToastContext";
+import { Button } from "../../components/common/Button";
 
 export default function TaskListPage() {
-  const { tasks, users, addTask, toggleTask, deleteTask } = useMockDb();
+  const { tasks, deleteTask } = useMockDb();
+  const toast = useToast();
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [assignee, setAssignee] = useState("");
-  const [customer, setCustomer] = useState("");
-  const [phone, setPhone] = useState("");
-  const [message, setMessage] = useState("");
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    addTask({
-      assginUser: assignee || users[0]?.name || "Aman Sharma",
-      lead: customer,
-      phone_number: phone,
-      addedBy: "Super Admin",
-      message
-    });
-    setModalOpen(false);
-    setCustomer("");
-    setPhone("");
-    setMessage("");
+  const handleDelete = async (id: string) => {
+    setIsDeleting(id);
+    await new Promise(res => setTimeout(res, 500));
+    deleteTask(id);
+    toast.warning("Record deleted successfully.");
+    setIsDeleting(null);
   };
 
   const columns: Column<Task>[] = [
-    { key: "date", header: "Date" },
+    { key: "date", header: "Date", render: (val) => `${val} 09:55 am` },
     { key: "assginUser", header: "Assign User" },
-    { key: "lead", header: "Lead" },
+    { key: "lead", header: "Lead", render: (val) => val || "N/A" },
     { key: "phone_number", header: "Phone Number" },
     { key: "addedBy", header: "Added By" },
     { key: "message", header: "Message" },
-    {
-      key: "status",
-      header: "Status",
-      render: (val, row) => (
-        <button
-          onClick={() => toggleTask(row.id)}
-          className={`flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider text-white ${
-            val === "Completed" ? "bg-indigo-600" : "bg-yellow-600"
-          }`}
-        >
-          {val}
-        </button>
-      )
-    },
     {
       key: "actions",
       header: "Action",
       sortable: false,
       render: (_, row) => (
-        <button
-          onClick={() => deleteTask(row.id)}
-          className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-red-500 rounded transition-all"
-        >
-          <Delete className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <Button
+            variant="danger"
+            size="sm"
+            className="p-1.5"
+            onClick={() => handleDelete(row.id)}
+            isLoading={isDeleting === row.id}
+            title="Delete Record"
+          >
+            {isDeleting !== row.id && <Delete className="w-3.5 h-3.5" />}
+          </Button>
+        </div>
       )
     }
   ];
 
   return (
     <div className="space-y-6">
-      {/* Header Panel */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h2 className="text-xl font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-50">
-            Task List
-          </h2>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-wider">
-            Distribute operational tasks across call agents
-          </p>
+      <div className="bg-white dark:bg-zinc-950 p-6 border border-zinc-200 dark:border-zinc-900 rounded-md shadow-sm space-y-6">
+        
+        {/* Date Range Top Right */}
+        <div className="flex items-center justify-end border-b border-zinc-100 dark:border-zinc-900 pb-4">
+          <span className="text-xs font-semibold text-zinc-500 bg-zinc-100 dark:bg-zinc-900 px-3 py-2 rounded border border-zinc-200/50 dark:border-zinc-800">
+            📅 May 30, 2026 - May 30, 2026
+          </span>
         </div>
-        <button
-          onClick={() => {
-            setAssignee(users[0]?.name || "");
-            setModalOpen(true);
-          }}
-          className="flex items-center gap-1 py-1.5 px-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-wider rounded-md shadow-sm transition-all"
-        >
-          <Add className="w-4 h-4" /> Assign Task
-        </button>
+
+        {/* Table Element */}
+        <Table data={tasks} columns={columns} selectable={false} />
       </div>
-
-      <Table data={tasks} columns={columns} />
-
-      {/* Assign Task Modal */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Create New Task">
-        <form onSubmit={handleCreate} className="space-y-4">
-          <Select
-            label="Assign Agent"
-            value={assignee}
-            onChange={(e) => setAssignee(e.target.value)}
-            options={users.map(u => ({ value: u.name, label: u.name }))}
-          />
-          <Input label="Customer Name" value={customer} onChange={(e) => setCustomer(e.target.value)} required />
-          <Input label="Customer Mobile" value={phone} onChange={(e) => setPhone(e.target.value)} required />
-          <Input label="Action Message" value={message} onChange={(e) => setMessage(e.target.value)} required />
-          <button
-            type="submit"
-            className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold uppercase tracking-wider text-xs rounded-md shadow transition-all"
-          >
-            Dispatch Task
-          </button>
-        </form>
-      </Modal>
     </div>
   );
 }

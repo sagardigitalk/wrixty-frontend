@@ -156,6 +156,7 @@ interface MockDbContextType {
   convertToOrder: (leadId: string, details: { paymentType: "COD" | "Prepaid"; courier: string; transactionId: string; discountType?: string }) => void;
   deleteOrder: (id: string) => void;
   updateOrder: (id: string, o: Partial<Order>) => void;
+  addOrder: (o: Omit<Order, "id">) => void;
   
   addCourier: (c: Omit<Courier, "id">) => void;
   updateCourier: (id: string, c: Partial<Courier>) => void;
@@ -446,6 +447,18 @@ export const MockDbProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     save("wrixty_orders", newOrders);
   };
 
+  const addOrder = (o: Omit<Order, "id">) => {
+    const newOrders = [
+      ...orders,
+      {
+        ...o,
+        id: Date.now().toString(),
+      }
+    ];
+    setOrders(newOrders);
+    save("wrixty_orders", newOrders);
+  };
+
   // Courier CRUD
   const addCourier = (c: Omit<Courier, "id">) => {
     const newCouriers = [...couriers, { ...c, id: Date.now().toString() }];
@@ -544,6 +557,7 @@ export const MockDbProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         convertToOrder,
         deleteOrder,
         updateOrder,
+        addOrder,
         addCourier,
         updateCourier,
         deleteCourier,
