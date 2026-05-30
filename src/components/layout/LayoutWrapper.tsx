@@ -40,6 +40,7 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false); // default light-mode based on screenshot!
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{name: string; email: string; avatar: string} | null>(null);
   
   // Collapsible Submenu states
   const [teamOpen, setTeamOpen] = useState(false);
@@ -53,6 +54,23 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
       router.push("/login");
     } else if (auth) {
       setIsAuthenticated(true);
+      const userDataStr = localStorage.getItem("wrixty_authenticated_user");
+      if (userDataStr) {
+        try {
+          const u = JSON.parse(userDataStr);
+          setCurrentUser({
+            name: u.name || "Admin",
+            email: u.email || "superadmin@gmail.com",
+            avatar: u.name ? u.name.charAt(0).toUpperCase() : "A"
+          });
+        } catch (e) {}
+      } else {
+        setCurrentUser({
+          name: "Admin",
+          email: "superadmin@gmail.com",
+          avatar: "A"
+        });
+      }
       if (pathname === "/login") {
         router.push("/dashboard");
       }
@@ -83,6 +101,7 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const handleLogout = () => {
     localStorage.removeItem("wrixty_authenticated");
+    localStorage.removeItem("wrixty_authenticated_user");
     setIsAuthenticated(false);
     router.push("/login");
   };
@@ -334,11 +353,11 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
 
                 <div className="flex items-center gap-2.5 p-1">
                   <div className="w-8 h-8 rounded bg-amber-600/10 text-amber-700 font-black text-xs flex items-center justify-center uppercase shadow-sm border border-amber-600/20">
-                    A
+                    {currentUser?.avatar || "A"}
                   </div>
                   <div className="flex flex-col text-left">
-                    <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">Admin</span>
-                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-semibold tracking-wide">superadmin@gmail.com</span>
+                    <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">{currentUser?.name || "Admin"}</span>
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-semibold tracking-wide">{currentUser?.email || "superadmin@gmail.com"}</span>
                   </div>
                 </div>
               </div>

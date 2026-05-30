@@ -3,14 +3,16 @@
 import React, { useState } from "react";
 import { useMockDb, User } from "../../context/MockDbContext";
 import { Table, Column } from "../../components/common/Table";
-import { Delete, Add, Edit } from "@mui/icons-material";
+import { Delete, Add, Edit, SyncAlt } from "@mui/icons-material";
 import { Modal } from "../../components/common/Modal";
 import { Input } from "../../components/common/Input";
 import { Select } from "../../components/common/Select";
 import { Button } from "../../components/common/Button";
+import { useRouter } from "next/navigation";
 
 export default function UsersPage() {
   const { users, addUser, updateUser, deleteUser } = useMockDb();
+  const router = useRouter();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -69,6 +71,17 @@ export default function UsersPage() {
     clear();
   };
 
+  const handleLoginAs = (user: User) => {
+    localStorage.setItem("wrixty_authenticated", "true");
+    localStorage.setItem("wrixty_authenticated_user", JSON.stringify({
+      name: user.name,
+      email: user.email,
+      roles: user.roles
+    }));
+    // Redirecting via window.location to ensure layout re-renders with new auth context
+    window.location.href = "/dashboard";
+  };
+
   const clear = () => {
     setName("");
     setEmail("");
@@ -91,18 +104,27 @@ export default function UsersPage() {
       header: "Action",
       sortable: false,
       render: (_, row) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => openEdit(row)}
-            className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-indigo-500 rounded transition-all"
+            className="p-1.5 bg-green-600 hover:bg-green-500 text-white rounded transition-all shadow-sm"
+            title="Edit User"
           >
-            <Edit className="w-4 h-4" />
+            <Edit className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => handleLoginAs(row)}
+            className="p-1.5 bg-teal-800 hover:bg-teal-700 text-white rounded transition-all shadow-sm"
+            title="Login As This User"
+          >
+            <SyncAlt className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => deleteUser(row.id)}
-            className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-red-500 rounded transition-all"
+            className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-red-500 hover:text-red-600 rounded transition-all ml-2"
+            title="Delete User"
           >
-            <Delete className="w-4 h-4" />
+            <Delete className="w-3.5 h-3.5" />
           </button>
         </div>
       )
