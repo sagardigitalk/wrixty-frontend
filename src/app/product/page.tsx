@@ -15,11 +15,12 @@ import { Delete, Edit, Inventory, Label, Add } from "@mui/icons-material";
 import { Modal } from "../../components/common/Modal";
 import { Input } from "../../components/common/Input";
 import { Button } from "../../components/common/Button";
+import { useToast } from "../../context/ToastContext";
 
 export default function ProductPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
   const [exportLoading, setExportLoading] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
@@ -45,16 +46,15 @@ export default function ProductPage() {
   const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
       const res = await fetchProducts({ page, limit, search });
       setProducts(res.data);
       setTotal(res.total);
     } catch {
-      setError("Failed to load products. Make sure the backend is running.");
+      toast.error("Failed to load products. Make sure the backend is running.");
     } finally {
       setLoading(false);
     }
-  }, [page, limit, search]);
+  }, [page, limit, search, toast]);
 
   useEffect(() => {
     loadProducts();
@@ -76,9 +76,10 @@ export default function ProductPage() {
       await createProduct({ name, amount: Number(amount), cod_dicount: Number(codDiscount), prepad_disocount: Number(prepaidDiscount) });
       setModalOpen(false);
       clear();
+      toast.success("Product created successfully.");
       loadProducts();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to create product.");
+      toast.error(err?.response?.data?.message || "Failed to create product.");
     }
   };
 
@@ -100,18 +101,20 @@ export default function ProductPage() {
       await updateProduct(activeProduct._id, { name, amount: Number(amount), cod_dicount: Number(codDiscount), prepad_disocount: Number(prepaidDiscount) });
       setEditOpen(false);
       clear();
+      toast.success("Product updated successfully.");
       loadProducts();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to update product.");
+      toast.error(err?.response?.data?.message || "Failed to update product.");
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
       await deleteProduct(id);
+      toast.success("Product deleted successfully.");
       loadProducts();
     } catch {
-      setError("Failed to delete product.");
+      toast.error("Failed to delete product.");
     }
   };
 
@@ -136,11 +139,25 @@ export default function ProductPage() {
     try {
       setExportLoading(true);
       const rows = await exportProducts(search);
-      if (type === 'copy') { exportCopy(rows, exportFields); setCopySuccess(true); setTimeout(() => setCopySuccess(false), 2000); }
-      else if (type === 'excel') exportExcel(rows, exportFields, 'products');
-      else if (type === 'csv') exportCSV(rows, exportFields, 'products');
-      else if (type === 'pdf') exportPDF(rows, exportFields, 'Product List');
-    } catch { setError('Export failed. Please try again.'); }
+      if (type === 'copy') { 
+        exportCopy(rows, exportFields); 
+        toast.success("Copied to clipboard!");
+        setCopySuccess(true); 
+        setTimeout(() => setCopySuccess(false), 2000); 
+      }
+      else if (type === 'excel') {
+        exportExcel(rows, exportFields, 'products');
+        toast.success("Excel exported successfully.");
+      }
+      else if (type === 'csv') {
+        exportCSV(rows, exportFields, 'products');
+        toast.success("CSV exported successfully.");
+      }
+      else if (type === 'pdf') {
+        exportPDF(rows, exportFields, 'Product List');
+        toast.success("PDF exported successfully.");
+      }
+    } catch { toast.error('Export failed. Please try again.'); }
     finally { setExportLoading(false); }
   };
 
@@ -207,12 +224,6 @@ export default function ProductPage() {
             {exportLoading && <span className="text-[10px] text-zinc-400 ml-1">Exporting...</span>}
           </div>
         </div>
-
-        {error && (
-          <div className="text-sm text-rose-500 bg-rose-50  border border-rose-200  rounded-lg px-3 py-2">
-            {error}
-          </div>
-        )}
 
         <Table
           data={products}

@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import { Input } from "../../components/common/Input";
 import { Button } from "../../components/common/Button";
 import { loginUser } from "../../services/authService";
+import { useToast } from "../../context/ToastContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const toast = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -23,7 +24,6 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
 
     try {
       const user = await loginUser({ email, password });
@@ -35,9 +35,11 @@ export default function LoginPage() {
         roles: user.roles,
         permissions: user.permissions
       }));
+      toast.success("Login Successful! Welcome back.");
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Invalid email address or password. Please try again.");
+      const errorMsg = err?.response?.data?.message || "Invalid email address or password. Please try again.";
+      toast.error(errorMsg);
       setLoading(false);
     }
   };
@@ -66,12 +68,6 @@ export default function LoginPage() {
               Sign In to Your Account
             </p>
           </div>
-
-          {error && (
-            <div className="p-3 text-xs bg-error/10 border border-error/20 text-error rounded-lg text-left font-medium">
-              {error}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input

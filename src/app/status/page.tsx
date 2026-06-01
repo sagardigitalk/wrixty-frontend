@@ -15,11 +15,12 @@ import { Delete, Edit, Label, Add } from "@mui/icons-material";
 import { Modal } from "../../components/common/Modal";
 import { Input } from "../../components/common/Input";
 import { Button } from "../../components/common/Button";
+import { useToast } from "../../context/ToastContext";
 
 export default function StatusPage() {
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
   const [exportLoading, setExportLoading] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
@@ -40,16 +41,15 @@ export default function StatusPage() {
   const loadStatuses = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
       const res = await fetchStatuses({ page, limit, search });
       setStatuses(res.data);
       setTotal(res.total);
     } catch {
-      setError("Failed to load statuses. Make sure the backend is running.");
+      toast.error("Failed to load statuses. Make sure the backend is running.");
     } finally {
       setLoading(false);
     }
-  }, [page, limit, search]);
+  }, [page, limit, search, toast]);
 
   useEffect(() => {
     loadStatuses();
@@ -69,9 +69,10 @@ export default function StatusPage() {
       await createStatus({ name, color });
       setModalOpen(false);
       clear();
+      toast.success("Status created successfully.");
       loadStatuses();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to create status.");
+      toast.error(err?.response?.data?.message || "Failed to create status.");
     }
   };
 
@@ -91,18 +92,20 @@ export default function StatusPage() {
       await updateStatus(activeStatus._id, { name, color });
       setEditOpen(false);
       clear();
+      toast.success("Status updated successfully.");
       loadStatuses();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to update status.");
+      toast.error(err?.response?.data?.message || "Failed to update status.");
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
       await deleteStatus(id);
+      toast.success("Status deleted successfully.");
       loadStatuses();
     } catch {
-      setError("Failed to delete status.");
+      toast.error("Failed to delete status.");
     }
   };
 
@@ -122,11 +125,25 @@ export default function StatusPage() {
     try {
       setExportLoading(true);
       const rows = await exportStatuses(search);
-      if (type === 'copy') { exportCopy(rows, exportFields); setCopySuccess(true); setTimeout(() => setCopySuccess(false), 2000); }
-      else if (type === 'excel') exportExcel(rows, exportFields, 'statuses');
-      else if (type === 'csv') exportCSV(rows, exportFields, 'statuses');
-      else if (type === 'pdf') exportPDF(rows, exportFields, 'Status List');
-    } catch { setError('Export failed. Please try again.'); }
+      if (type === 'copy') { 
+        exportCopy(rows, exportFields); 
+        toast.success("Copied to clipboard!");
+        setCopySuccess(true); 
+        setTimeout(() => setCopySuccess(false), 2000); 
+      }
+      else if (type === 'excel') {
+        exportExcel(rows, exportFields, 'statuses');
+        toast.success("Excel exported successfully.");
+      }
+      else if (type === 'csv') {
+        exportCSV(rows, exportFields, 'statuses');
+        toast.success("CSV exported successfully.");
+      }
+      else if (type === 'pdf') {
+        exportPDF(rows, exportFields, 'Status List');
+        toast.success("PDF exported successfully.");
+      }
+    } catch { toast.error('Export failed. Please try again.'); }
     finally { setExportLoading(false); }
   };
 
@@ -191,12 +208,6 @@ export default function StatusPage() {
             {exportLoading && <span className="text-[10px] text-zinc-400 ml-1">Exporting...</span>}
           </div>
         </div>
-
-        {error && (
-          <div className="text-sm text-rose-500 bg-rose-50  border border-rose-200  rounded-lg px-3 py-2">
-            {error}
-          </div>
-        )}
 
         <Table
           data={statuses}

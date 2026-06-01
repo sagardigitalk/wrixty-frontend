@@ -8,6 +8,7 @@ import { Input } from "../../components/common/Input";
 import { Select } from "../../components/common/Select";
 import { Button } from "../../components/common/Button";
 import { useRouter } from "next/navigation";
+import { useToast } from "../../context/ToastContext";
 import {
   fetchUsers,
   createUser,
@@ -20,9 +21,9 @@ import { fetchRoles, Role as BackendRole } from "../../services/roleService";
 
 export default function UsersPage() {
   const router = useRouter();
+  const toast = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // Server-side pagination + search
   const [page, setPage] = useState(1);
@@ -67,16 +68,15 @@ export default function UsersPage() {
   const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
       const res = await fetchUsers({ page, limit, search });
       setUsers(res.data);
       setTotal(res.total);
     } catch {
-      setError("Failed to load users. Make sure the backend is running.");
+      toast.error("Failed to load users. Make sure the backend is running.");
     } finally {
       setLoading(false);
     }
-  }, [page, limit, search]);
+  }, [page, limit, search, toast]);
 
   useEffect(() => {
     loadUsers();
@@ -170,9 +170,10 @@ export default function UsersPage() {
       clear();
       setPage(1);
       setSearch("");
+      toast.success("User created successfully.");
       loadUsers();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to create user.");
+      toast.error(err?.response?.data?.message || "Failed to create user.");
     }
   };
 
@@ -218,9 +219,10 @@ export default function UsersPage() {
       await updateUser(activeUser._id, formData);
       setEditOpen(false);
       clear();
+      toast.success("User updated successfully.");
       loadUsers();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to update user.");
+      toast.error(err?.response?.data?.message || "Failed to update user.");
     }
   };
 
@@ -235,9 +237,10 @@ export default function UsersPage() {
       await deleteUser(userToDelete._id);
       setDeleteOpen(false);
       setUserToDelete(null);
+      toast.success("User deleted successfully.");
       loadUsers();
     } catch {
-      setError("Failed to delete user.");
+      toast.error("Failed to delete user.");
     }
   };
 
@@ -258,6 +261,7 @@ export default function UsersPage() {
         roles: user.roles,
         permissions: permissions
       }));
+      toast.success(`Logged in as ${user.name}`);
       window.location.href = "/dashboard";
     } catch (err) {
       console.error("Login-as permissions load failed:", err);
@@ -268,6 +272,7 @@ export default function UsersPage() {
         roles: user.roles,
         permissions: {}
       }));
+      toast.success(`Logged in as ${user.name}`);
       window.location.href = "/dashboard";
     }
   };
@@ -377,12 +382,6 @@ export default function UsersPage() {
           Add User
         </Button>
       </div>
-
-      {error && (
-        <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded px-3 py-2">
-          {error}
-        </div>
-      )}
 
       <div className="bg-card-bg p-8 border border-border-ui rounded-lg shadow-soft">
         <Table 

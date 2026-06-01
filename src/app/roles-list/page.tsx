@@ -24,6 +24,7 @@ import { Modal } from "../../components/common/Modal";
 import { Input } from "../../components/common/Input";
 import { Button } from "../../components/common/Button";
 import { DeleteConfirmModal } from "../../components/common/DeleteConfirmModal";
+import { useToast } from "../../context/ToastContext";
 
 const MODULE_PERMISSIONS = [
   { module: "Dashboard", perms: ["Dashboard-view"] },
@@ -49,7 +50,7 @@ const MODULE_PERMISSIONS = [
 export default function RolesListPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
   const [exportLoading, setExportLoading] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
@@ -74,16 +75,15 @@ export default function RolesListPage() {
   const loadRoles = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
       const res = await fetchRoles({ page, limit, search });
       setRoles(res.data);
       setTotal(res.total);
     } catch {
-      setError("Failed to load roles. Make sure the backend is running.");
+      toast.error("Failed to load roles. Make sure the backend is running.");
     } finally {
       setLoading(false);
     }
-  }, [page, limit, search]);
+  }, [page, limit, search, toast]);
 
   useEffect(() => {
     loadRoles();
@@ -103,9 +103,10 @@ export default function RolesListPage() {
       await createRole({ name, permissions: selectedPerms });
       setModalOpen(false);
       clear();
+      toast.success("Role created successfully.");
       loadRoles();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to create role.");
+      toast.error(err?.response?.data?.message || "Failed to create role.");
     }
   };
 
@@ -125,9 +126,10 @@ export default function RolesListPage() {
       await updateRole(activeRole._id, { name, permissions: selectedPerms });
       setEditOpen(false);
       clear();
+      toast.success("Role updated successfully.");
       loadRoles();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to update role.");
+      toast.error(err?.response?.data?.message || "Failed to update role.");
     }
   };
 
@@ -142,9 +144,10 @@ export default function RolesListPage() {
       await deleteRole(roleToDelete._id);
       setDeleteOpen(false);
       setRoleToDelete(null);
+      toast.success("Role deleted successfully.");
       loadRoles();
     } catch {
-      setError("Failed to delete role.");
+      toast.error("Failed to delete role.");
     }
   };
 
@@ -172,14 +175,24 @@ export default function RolesListPage() {
       const rows = await exportRoles(search);
       if (type === 'copy') {
         exportCopy(rows, exportFields);
+        toast.success("Copied to clipboard!");
         setCopySuccess(true);
         setTimeout(() => setCopySuccess(false), 2000);
       }
-      else if (type === 'excel') exportExcel(rows, exportFields, 'roles');
-      else if (type === 'csv') exportCSV(rows, exportFields, 'roles');
-      else if (type === 'pdf') exportPDF(rows, exportFields, 'Roles List');
+      else if (type === 'excel') {
+        exportExcel(rows, exportFields, 'roles');
+        toast.success("Excel exported successfully.");
+      }
+      else if (type === 'csv') {
+        exportCSV(rows, exportFields, 'roles');
+        toast.success("CSV exported successfully.");
+      }
+      else if (type === 'pdf') {
+        exportPDF(rows, exportFields, 'Roles List');
+        toast.success("PDF exported successfully.");
+      }
     } catch {
-      setError('Export failed. Please try again.');
+      toast.error('Export failed. Please try again.');
     } finally {
       setExportLoading(false);
     }
@@ -348,12 +361,6 @@ export default function RolesListPage() {
             {exportLoading && <span className="text-[10px] text-zinc-400 ml-1">Exporting...</span>}
           </div>
         </div>
-
-        {error && (
-          <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded px-3 py-2">
-            {error}
-          </div>
-        )}
 
         <Table 
           data={roles} 

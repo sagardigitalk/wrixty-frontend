@@ -1,15 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { CheckCircle, Error as ErrorIcon, Warning, Info, Close } from "@mui/icons-material";
-
-export type ToastType = "success" | "error" | "warning" | "info";
-
-export interface ToastMessage {
-  id: string;
-  type: ToastType;
-  message: string;
-}
+import React, { createContext, useContext } from "react";
+import toast, { Toaster } from "react-hot-toast";
 
 interface ToastContextType {
   toast: {
@@ -23,74 +15,72 @@ interface ToastContextType {
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
-
-  const addToast = (type: ToastType, message: string) => {
-    const id = Date.now().toString();
-    setToasts((prev) => [...prev, { id, type, message }]);
-    
-    // Auto remove after 4 seconds
-    setTimeout(() => {
-      removeToast(id);
-    }, 4000);
-  };
-
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
-
-  const toast = {
-    success: (msg: string) => addToast("success", msg),
-    error: (msg: string) => addToast("error", msg),
-    warning: (msg: string) => addToast("warning", msg),
-    info: (msg: string) => addToast("info", msg),
+  const toastMethods = {
+    success: (msg: string) => toast.success(msg, {
+      style: {
+        fontSize: '12px',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px',
+        borderRadius: '8px',
+        padding: '12px 16px',
+        border: '1px solid #0F766E20',
+        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)',
+      },
+      iconTheme: {
+        primary: '#0F766E',
+        secondary: '#fff',
+      },
+    }),
+    error: (msg: string) => toast.error(msg, {
+      style: {
+        fontSize: '12px',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px',
+        borderRadius: '8px',
+        padding: '12px 16px',
+        border: '1px solid #ef444420',
+        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)',
+      },
+    }),
+    warning: (msg: string) => toast(msg, {
+      icon: '⚠️',
+      style: {
+        fontSize: '12px',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px',
+        borderRadius: '8px',
+        padding: '12px 16px',
+        border: '1px solid #f59e0b20',
+        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)',
+      },
+    }),
+    info: (msg: string) => toast(msg, {
+      icon: 'ℹ️',
+      style: {
+        fontSize: '12px',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px',
+        borderRadius: '8px',
+        padding: '12px 16px',
+        border: '1px solid #3b82f620',
+        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)',
+      },
+    }),
   };
 
   return (
-    <ToastContext.Provider value={{ toast }}>
+    <ToastContext.Provider value={{ toast: toastMethods }}>
       {children}
-      
-      {/* Toast container floating element */}
-      <div className="fixed bottom-5 right-5 z-[9999] flex flex-col gap-3 max-w-sm w-full">
-        {toasts.map((t) => {
-          let icon = <Info className="w-5 h-5 text-blue-500" />;
-          let borderClass = "border-blue-500/20";
-          if (t.type === "success") {
-            icon = <CheckCircle className="w-5 h-5 text-primary-teal" />;
-            borderClass = "border-primary-teal/20";
-          } else if (t.type === "error") {
-            icon = <ErrorIcon className="w-5 h-5 text-red-500" />;
-            borderClass = "border-red-500/20";
-          } else if (t.type === "warning") {
-            icon = <Warning className="w-5 h-5 text-amber-500" />;
-            borderClass = "border-amber-500/20";
-          }
-
-          return (
-            <div
-              key={t.id}
-              className={`
-                flex items-center gap-3 p-4 rounded-lg shadow-2xl border
-                bg-white  text-zinc-900 
-                transition-all duration-300 transform translate-y-0 scale-100
-                animate-fade-in
-                ${borderClass}
-              `}
-            >
-              <div className="shrink-0">{icon}</div>
-              <div className="flex-1 text-xs font-semibold tracking-wide uppercase text-left">
-                {t.message}
-              </div>
-              <button
-                onClick={() => removeToast(t.id)}
-                className="shrink-0 text-zinc-400 hover:text-zinc-600  transition-colors"
-              >
-                <Close className="w-4 h-4" />
-              </button>
-            </div>
-          );
-        })}
-      </div>
+      <Toaster 
+        position="bottom-right"
+        toastOptions={{
+          duration: 4000,
+        }}
+      />
     </ToastContext.Provider>
   );
 };

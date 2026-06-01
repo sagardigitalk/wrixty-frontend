@@ -2,26 +2,24 @@
 
 import React, { useState } from "react";
 import { Input } from "../../components/common/Input";
+import { useToast } from "../../context/ToastContext";
 
 export default function ProfileDetailsPage() {
+  const toast = useToast();
   const [name, setName] = useState("Super Admin");
   const [email, setEmail] = useState("Superadmin@gmail.com");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
 
   const handleUpdate = (e: React.FormEvent) => {
     e.preventDefault();
-    setSuccess("");
-    setError("");
 
     if (password && password !== confirmPassword) {
-      setError("Passwords do not match. Please verify.");
+      toast.error("Passwords do not match. Please verify.");
       return;
     }
 
-    setSuccess("Profile credentials updated successfully.");
+    toast.success("Profile credentials updated successfully.");
     setPassword("");
     setConfirmPassword("");
   };
@@ -39,17 +37,6 @@ export default function ProfileDetailsPage() {
       </div>
 
       <div className="bg-white  border border-zinc-200  rounded-lg p-6 shadow-sm">
-        {success && (
-          <div className="mb-4 p-3 text-xs bg-primary-teal/10 border border-primary-teal/20 text-primary-teal  font-bold uppercase tracking-wider rounded-lg">
-            {success}
-          </div>
-        )}
-        {error && (
-          <div className="mb-4 p-3 text-xs bg-red-500/10 border border-red-500/20 text-red-500 font-bold uppercase tracking-wider rounded-lg">
-            {error}
-          </div>
-        )}
-
         <form onSubmit={handleUpdate} className="space-y-4">
           <div className="flex items-center gap-4 border-b border-zinc-100  pb-5 mb-5">
             <div className="w-16 h-16 rounded-lg bg-gradient-primary font-black text-white text-xl flex items-center justify-center shadow-lg uppercase">
