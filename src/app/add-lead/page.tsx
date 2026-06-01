@@ -9,9 +9,13 @@ import { Button } from "../../components/common/Button";
 import { Delete, ArrowBack } from "@mui/icons-material";
 import { fetchUsers } from "../../services/userService";
 import { fetchProducts } from "../../services/productService";
+import { fetchStatuses } from "../../services/statusService";
+import { fetchReasonToCalls } from "../../services/reasonToCallService";
+import { createLeadApi } from "../../services/leadService";
+import { createOrderApi } from "../../services/orderService";
 
 interface SelectedProductRow {
-  id: string;
+  productId: string;
   name: string;
   amount: number;
   quantity: number;
@@ -21,29 +25,40 @@ export default function AddLeadPage() {
   const router = useRouter();
   const [products, setProducts] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
-  const [couriers, setCouriers] = useState<any[]>([
+  const [couriers] = useState<any[]>([
     { id: "1", name: "Delhivery" },
     { id: "2", name: "BlueDart" },
     { id: "3", name: "XpressBees" },
     { id: "4", name: "DHL Express" }
   ]);
-  const [leads, setLeads] = useState<any[]>([]);
+  const [statusesOptions, setStatusesOptions] = useState<any[]>([]);
+  const [reasonCallOptions, setReasonCallOptions] = useState<any[]>([]);
   const toast = useToast();
 
   React.useEffect(() => {
     const loadMasterData = async () => {
       try {
-        const [usersRes, prodsRes] = await Promise.all([
+        const [usersRes, prodsRes, statusRes, reasonRes] = await Promise.all([
           fetchUsers({ page: 1, limit: 100 }),
-          fetchProducts({ page: 1, limit: 100 })
+          fetchProducts({ page: 1, limit: 100 }),
+          fetchStatuses({ page: 1, limit: 100 }),
+          fetchReasonToCalls({ page: 1, limit: 100 })
         ]);
         setUsers(usersRes.data);
         setProducts(prodsRes.data);
+        setStatusesOptions(statusRes.data);
+        setReasonCallOptions(reasonRes.data);
         if (usersRes.data.length > 0) {
-          setAssignee(usersRes.data[0].name);
+          setAssignee(usersRes.data[0]._id || usersRes.data[0].id);
         }
         if (prodsRes.data.length > 0) {
-          setCurrentSelectedProduct(prodsRes.data[0].name);
+          setCurrentSelectedProductId(prodsRes.data[0]._id || prodsRes.data[0].id);
+        }
+        if (statusRes.data.length > 0) {
+          setStatus(statusRes.data[0]._id || statusRes.data[0].id);
+        }
+        if (reasonRes.data.length > 0) {
+          setStatusTwo(reasonRes.data[0]._id || reasonRes.data[0].id);
         }
       } catch (err) {
         console.error("Error loading master data", err);
@@ -52,58 +67,50 @@ export default function AddLeadPage() {
     loadMasterData();
   }, []);
 
-  const addLead = (l: any) => {
-    toast.success("Lead added locally!");
-  };
-
-  const convertToOrder = (leadId: string, details: any) => {
-    toast.success("Converted to order locally!");
-  };
-
   const [isAddingLead, setIsAddingLead] = useState(false);
 
-  // Form states
+  // Form states — IDs stored
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [status, setStatus] = useState("Open");
-  const [statusTwo, setStatusTwo] = useState("CNR");
+  const [status, setStatus] = useState("");         // statusId
+  const [statusTwo, setStatusTwo] = useState("");   // reasonToCallId
   const [noteText, setNoteText] = useState("");
-  const [assignee, setAssignee] = useState(users[0]?.name || "");
+  const [assignee, setAssignee] = useState("");     // userId
   const [orderStatus, setOrderStatus] = useState(false);
   const [reminder, setReminder] = useState("");
 
   // Product Selection Table States
   const [modalSelectedProducts, setModalSelectedProducts] = useState<SelectedProductRow[]>([]);
-  const [currentSelectedProduct, setCurrentSelectedProduct] = useState(products[0]?.name || "");
+  const [currentSelectedProductId, setCurrentSelectedProductId] = useState("");
 
-  // Convert to Order default
+  // Convert to Order fields
   const [paymentType, setPaymentType] = useState<"COD" | "Prepaid">("COD");
-  const [selectedCourier, setSelectedCourier] = useState(couriers[0]?.name || "Shiprocket");
-  const [transactionId, setTransactionId] = useState("TXN-AUTO");
+  const [selectedCourier, setSelectedCourier] = useState("Delhivery");
+  const [transactionId, setTransactionId] = useState("");
 
   const handleAddProduct = () => {
-    if (!currentSelectedProduct) return;
-    const prod = products.find(p => p.name === currentSelectedProduct);
+    if (!currentSelectedProductId) return;
+    const prod = products.find(p => (p._id || p.id) === currentSelectedProductId);
     if (!prod) return;
 
-    if (modalSelectedProducts.some(p => p.name === prod.name)) {
+    if (modalSelectedProducts.some(p => p.productId === currentSelectedProductId)) {
       toast.warning("Product already added to list!");
       return;
     }
 
     setModalSelectedProducts([
       ...modalSelectedProducts,
-      { id: prod.id, name: prod.name, amount: prod.amount, quantity: 1 }
+      { productId: prod._id || prod.id, name: prod.name, amount: prod.amount, quantity: 1 }
     ]);
   };
 
-  const handleRemoveProduct = (id: string) => {
-    setModalSelectedProducts(modalSelectedProducts.filter(p => p.id !== id));
+  const handleRemoveProduct = (productId: string) => {
+    setModalSelectedProducts(modalSelectedProducts.filter(p => p.productId !== productId));
   };
 
-  const handleQtyChange = (id: string, qty: number) => {
+  const handleQtyChange = (productId: string, qty: number) => {
     setModalSelectedProducts(
-      modalSelectedProducts.map(p => p.id === id ? { ...p, quantity: Math.max(1, qty) } : p)
+      modalSelectedProducts.map(p => p.productId === productId ? { ...p, quantity: Math.max(1, qty) } : p)
     );
   };
 
@@ -117,41 +124,69 @@ export default function AddLeadPage() {
     }
 
     setIsAddingLead(true);
-    await new Promise(resolve => setTimeout(resolve, 1200));
 
-    const productNames = modalSelectedProducts.map(p => p.name).join(", ");
-    
-    addLead({
+    const leadPayload = {
       name,
       phone_number: phone,
-      product: productNames,
+      // Products as separate structured array
+      products: modalSelectedProducts.map(p => ({
+        productId: p.productId,
+        name: p.name,
+        amount: p.amount,
+        quantity: p.quantity
+      })),
+      // Kept for display/backward compat
+      product: modalSelectedProducts.map(p => p.name).join(", "),
       amount: totalAmount,
       quantity: modalSelectedProducts.reduce((sum, p) => sum + p.quantity, 0),
+      // IDs for relational fields
       assgin: assignee,
-      status,
+      status: status,
       reason_call: statusTwo,
-      note: noteText
-    });
+      note: noteText,
+      reminder: reminder,
+      orderStatus: orderStatus
+    };
 
-    if (orderStatus) {
-      setTimeout(() => {
-        // Find newly added lead and convert it (naive approach for mock DB)
-        const lastLead = leads[leads.length - 1]; // This is fragile in real-world, fine for mock
-        if (lastLead) {
-          convertToOrder(lastLead.id, {
-            paymentType: paymentType,
+    try {
+      const createdLead = await createLeadApi(leadPayload as any);
+      toast.success(`Lead created successfully for ${name || "Customer"}!`);
+
+      // If "Convert to Order automatically" is checked, create an order
+      if (orderStatus) {
+        try {
+          await createOrderApi({
+            leadId: (createdLead as any)._id,
+            name,
+            phone_number: phone,
+            products: modalSelectedProducts.map(p => ({
+              productId: p.productId,
+              name: p.name,
+              amount: p.amount,
+              quantity: p.quantity
+            })),
+            product: modalSelectedProducts.map(p => p.name).join(", "),
+            amount: totalAmount,
+            quantity: modalSelectedProducts.reduce((sum, p) => sum + p.quantity, 0),
+            grandTotal: totalAmount,
+            paymentType,
             courier: selectedCourier,
-            transactionId: transactionId
+            assginTo: assignee,
+            transactionId: transactionId || "TXN-AUTO",
+            status: "Dispatched"
           });
+          toast.success("Order created automatically!");
+        } catch (orderErr: any) {
+          toast.error("Lead saved but order creation failed: " + (orderErr.response?.data?.message || ""));
         }
-      }, 100);
-    }
+      }
 
-    toast.success(`Lead created successfully for ${name || "Customer"}!`);
-    setIsAddingLead(false);
-    
-    // Navigate back
-    router.push("/lead-list");
+      setIsAddingLead(false);
+      router.push("/lead-list");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to add lead");
+      setIsAddingLead(false);
+    }
   };
 
   return (
@@ -184,14 +219,8 @@ export default function AddLeadPage() {
               value={statusTwo}
               onChange={(e) => setStatusTwo(e.target.value)}
               options={[
-                { value: "CNR", label: "CNR" },
-                { value: "Call Busy", label: "Call Busy" },
-                { value: "Number off", label: "Number off" },
-                { value: "vichari ne kese", label: "vichari ne kese" },
-                { value: "Soch k Batyge", label: "Soch k Batyge" },
-                { value: "Friends k liye tha", label: "Friends k liye tha" },
-                { value: "Bija mate Hatu", label: "Bija mate Hatu" },
-                { value: "Thodi var pachi call back kare", label: "Thodi var pachi call back kare" }
+                { value: "", label: "Select Reason" },
+                ...reasonCallOptions.map(r => ({ value: r._id || r.id, label: r.name }))
               ]}
             />
           </div>
@@ -202,18 +231,18 @@ export default function AddLeadPage() {
               value={status}
               onChange={(e) => setStatus(e.target.value)}
               options={[
-                { value: "Select Status", label: "Select Status" },
-                { value: "Open", label: "Open" },
-                { value: "Inprogress", label: "Inprogress" },
-                { value: "Close", label: "Close" },
-                { value: "Reject", label: "Reject" }
+                { value: "", label: "Select Status" },
+                ...statusesOptions.map(s => ({ value: s._id || s.id, label: s.name }))
               ]}
             />
             <Select
               label="Assgin By"
               value={assignee}
               onChange={(e) => setAssignee(e.target.value)}
-              options={users.map(u => ({ value: u.name, label: u.name }))}
+              options={[
+                { value: "", label: "Select User" },
+                ...users.map(u => ({ value: u._id || u.id, label: u.name }))
+              ]}
             />
             <Input label="Note" value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Enter Note" />
           </div>
@@ -231,14 +260,44 @@ export default function AddLeadPage() {
             <Input label="Reminder" type="date" value={reminder} onChange={(e) => setReminder(e.target.value)} />
           </div>
 
+          {/* Convert to Order fields shown when checkbox is checked */}
+          {orderStatus && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-zinc-50 rounded-lg border border-zinc-200">
+              <Select
+                label="Payment Type"
+                value={paymentType}
+                onChange={(e) => setPaymentType(e.target.value as "COD" | "Prepaid")}
+                options={[
+                  { value: "COD", label: "Cash on Delivery (COD)" },
+                  { value: "Prepaid", label: "Prepaid Online" }
+                ]}
+              />
+              <Select
+                label="Courier Partner"
+                value={selectedCourier}
+                onChange={(e) => setSelectedCourier(e.target.value)}
+                options={couriers.map(c => ({ value: c.name, label: c.name }))}
+              />
+              <Input
+                label="Transaction ID"
+                value={transactionId}
+                onChange={(e) => setTransactionId(e.target.value)}
+                placeholder="e.g. TXN90283019"
+              />
+            </div>
+          )}
+
           <div className="border-t border-zinc-150  pt-4 space-y-3 text-left">
             <h4 className="text-sm font-bold text-zinc-700 ">Select Products</h4>
             <div className="flex gap-2.5 items-end">
               <div className="flex-1">
                 <Select
-                  value={currentSelectedProduct}
-                  onChange={(e) => setCurrentSelectedProduct(e.target.value)}
-                  options={products.map(p => ({ value: p.name, label: `${p.name} (₹${p.amount})` }))}
+                  value={currentSelectedProductId}
+                  onChange={(e) => setCurrentSelectedProductId(e.target.value)}
+                  options={[
+                    { value: "", label: "Select a product" },
+                    ...products.map(p => ({ value: p._id || p.id, label: `${p.name} (₹${p.amount})` }))
+                  ]}
                 />
               </div>
               <Button type="button" variant="success" onClick={handleAddProduct}>
@@ -263,7 +322,7 @@ export default function AddLeadPage() {
                 <tbody className="divide-y divide-zinc-150 ">
                   {modalSelectedProducts.length > 0 ? (
                     modalSelectedProducts.map((row) => (
-                      <tr key={row.id}>
+                      <tr key={row.productId}>
                         <td className="p-3 font-medium text-zinc-800 ">{row.name}</td>
                         <td className="p-3 font-medium text-zinc-700 ">₹{row.amount}</td>
                         <td className="p-3 w-24">
@@ -271,7 +330,7 @@ export default function AddLeadPage() {
                             type="number"
                             min="1"
                             value={row.quantity}
-                            onChange={(e) => handleQtyChange(row.id, Number(e.target.value))}
+                            onChange={(e) => handleQtyChange(row.productId, Number(e.target.value))}
                             className="w-16 px-2 py-1 bg-zinc-50  border border-zinc-200  rounded-lg focus:ring-1 focus:ring-primary-teal outline-none text-center"
                           />
                         </td>
@@ -279,7 +338,7 @@ export default function AddLeadPage() {
                         <td className="p-3 text-center">
                           <button
                             type="button"
-                            onClick={() => handleRemoveProduct(row.id)}
+                            onClick={() => handleRemoveProduct(row.productId)}
                             className="p-1 hover:bg-red-50 text-red-500 hover:text-red-600 rounded-lg transition-colors"
                           >
                             <Delete className="w-4 h-4" />

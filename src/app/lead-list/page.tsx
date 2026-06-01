@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { fetchUsers } from "../../services/userService";
 import { fetchProducts } from "../../services/productService";
 import { fetchStatuses } from "../../services/statusService";
+import { fetchLeads, updateLeadApi, deleteLeadApi } from "../../services/leadService";
+import { createOrderApi } from "../../services/orderService";
+import { fetchReasonToCalls } from "../../services/reasonToCallService";
 
 export interface Lead {
   id: string;
@@ -43,73 +46,117 @@ interface SelectedProductRow {
 }
 
 export default function LeadListPage() {
-  const [leads, setLeads] = useState<Lead[]>([
-    { id: "1", name: "Rajesh Kumar", phone_number: "9988776655", product: "Wrixty Ashwagandha Gold", amount: 1200, quantity: 2, subtotal: 2400, assgin: "Aman Sharma", date: "2026-05-29", time: "10:30", status: "New", note: "Interested in stress relief products." },
-    { id: "2", name: "Suresh Gupta", phone_number: "8877665544", product: "Wrixty Triphala Digest", amount: 650, quantity: 1, subtotal: 650, assgin: "Priya Patel", date: "2026-05-29", time: "11:15", status: "Call Back", note: "Wants to consult with doctor first." },
-    { id: "3", name: "Neha Sharma", phone_number: "7766554433", product: "Wrixty Shatavari Hormonal Balance", amount: 1100, quantity: 1, subtotal: 1100, assgin: "Aman Sharma", date: "2026-05-30", time: "09:00", status: "In-Progress", note: "Inquiring about hormonal balance pack." },
-    { id: "4", name: "Ramesh Patel", phone_number: "9012345678", product: "Wrixty Brahmi Mind Focus", amount: 890, quantity: 3, subtotal: 2670, assgin: "Vikram Singh", date: "2026-05-28", time: "16:20", status: "Pending", note: "Asked for discount." }
-  ]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
-  const [couriers, setCouriers] = useState<any[]>([
+  const [couriers] = useState<any[]>([
     { id: "1", name: "Delhivery" },
     { id: "2", name: "BlueDart" },
     { id: "3", name: "XpressBees" },
     { id: "4", name: "DHL Express" }
   ]);
+  const [reasonsOptions, setReasonsOptions] = useState<any[]>([]);
 
   React.useEffect(() => {
     const loadMasterData = async () => {
       try {
-        const [usersRes, prodsRes, statusRes] = await Promise.all([
+        setIsFetchingData(true);
+        const [usersRes, prodsRes, statusRes, leadsRes, reasonRes] = await Promise.all([
           fetchUsers({ page: 1, limit: 100 }),
           fetchProducts({ page: 1, limit: 100 }),
-          fetchStatuses({ page: 1, limit: 100 })
+          fetchStatuses({ page: 1, limit: 100 }),
+          fetchLeads({ page: 1, limit: 100 }),
+          fetchReasonToCalls({ page: 1, limit: 100 })
         ]);
         setUsers(usersRes.data);
         setProducts(prodsRes.data);
         setStatuses(statusRes.data);
+        setReasonsOptions(reasonRes.data);
+        
+        // Map backend leads to frontend format (handle populated refs)
+        const mappedLeads = leadsRes.data.map((l: any) => ({
+          id: l._id || l.id,
+          name: l.name,
+          phone_number: l.phone_number,
+          product: l.product || (l.products?.map((p: any) => p.name).join(", ") || ""),
+          amount: l.amount || 0,
+          quantity: l.quantity || 1,
+          subtotal: (l.amount || 0),
+          assgin: l.assgin?.name || l.assgin || "",
+          assginId: l.assgin?._id || l.assgin || "",
+          date: l.createdAt ? new Date(l.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          time: l.createdAt ? new Date(l.createdAt).toTimeString().split(' ')[0].substring(0, 5) : "",
+          status: l.status?.name || l.status || "Open",
+          statusId: l.status?._id || l.status || "",
+          reason_call: l.reason_call?.name || l.reason_call || "",
+          reasonCallId: l.reason_call?._id || l.reason_call || "",
+          note: l.note || "",
+          reminderDate: l.reminder || "",
+          products: l.products || []
+        }));
+        setLeads(mappedLeads);
       } catch (err) {
         console.error("Error loading master data", err);
+      } finally {
+        setIsFetchingData(false);
       }
     };
     loadMasterData();
   }, []);
 
-  const addLead = (l: Omit<Lead, "id" | "date" | "subtotal">) => {
-    const newLeads = [
-      ...leads,
-      {
-        ...l,
-        id: Date.now().toString(),
-        date: new Date().toISOString().split("T")[0],
-        time: new Date().toTimeString().split(" ")[0].substring(0, 5),
-        subtotal: l.amount * l.quantity
-      }
-    ];
-    setLeads(newLeads);
-  };
-
-  const updateLead = (id: string, updated: Partial<Lead>) => {
-    setLeads(prev => prev.map(l => {
-      if (l.id === id) {
-        const merged = { ...l, ...updated };
-        if (updated.amount !== undefined || updated.quantity !== undefined) {
-          merged.subtotal = merged.amount * merged.quantity;
+  // Update lead: call API then sync local state
+  const updateLead = async (id: string, updated: Partial<Lead>) => {
+    try {
+      await updateLeadApi(id, updated);
+      setLeads(prev => prev.map(l => {
+        if (l.id === id) {
+          const merged = { ...l, ...updated };
+          if (updated.amount !== undefined || updated.quantity !== undefined) {
+            merged.subtotal = merged.amount * merged.quantity;
+          }
+          return merged;
         }
-        return merged;
-      }
-      return l;
-    }));
+        return l;
+      }));
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to update lead");
+    }
   };
 
-  const deleteLead = (id: string) => {
-    setLeads(prev => prev.map(l => l.id === id ? { ...l, isDeleted: true, deleteDate: new Date().toISOString().split("T")[0] } : l));
+  // Delete lead: soft delete via API then remove from local state
+  const deleteLead = async (id: string) => {
+    try {
+      await deleteLeadApi(id);
+      setLeads(prev => prev.filter(l => l.id !== id));
+      toast.success("Lead deleted successfully!");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to delete lead");
+    }
   };
 
-  const convertToOrder = (leadId: string, details: { paymentType: "COD" | "Prepaid"; courier: string; transactionId: string }) => {
-    updateLead(leadId, { status: "Delivered" });
+  // Convert lead to order via API
+  const convertToOrder = async (lead: Lead, details: { paymentType: "COD" | "Prepaid"; courier: string; transactionId: string }) => {
+    try {
+      await createOrderApi({
+        leadId: lead.id,
+        name: lead.name,
+        phone_number: lead.phone_number,
+        products: (lead as any).products || [],
+        product: lead.product,
+        amount: lead.amount,
+        quantity: lead.quantity,
+        grandTotal: lead.subtotal,
+        paymentType: details.paymentType,
+        courier: details.courier,
+        assginTo: (lead as any).assginId || lead.assgin,
+        transactionId: details.transactionId,
+        status: "Dispatched"
+      });
+      toast.success(`Successfully converted ${lead.name} to order!`);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to convert to order");
+    }
   };
   const toast = useToast();
 
@@ -194,20 +241,23 @@ export default function LeadListPage() {
     if (!activeLead) return;
 
     setIsUpdatingLead(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    updateLead(activeLead.id, {
-      name,
-      phone_number: phone,
-      assgin: assignee,
-      status,
-      reason_call: statusTwo,
-      note: noteText,
-      reminderDate: reminder
-    });
-    toast.info(`Lead configuration updated.`);
-    setIsUpdatingLead(false);
-    setEditModalOpen(false);
+    try {
+      await updateLead(activeLead.id, {
+        name,
+        phone_number: phone,
+        assgin: assignee,
+        status,
+        reason_call: statusTwo,
+        note: noteText,
+        reminder: reminder
+      });
+      toast.info(`Lead configuration updated.`);
+      setEditModalOpen(false);
+    } catch (_) {
+      // error toast already shown inside updateLead
+    } finally {
+      setIsUpdatingLead(false);
+    }
   };
 
   const openConvertModal = (lead: Lead) => {
@@ -223,25 +273,27 @@ export default function LeadListPage() {
     if (!activeLead) return;
     
     setIsConvertingLead(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    convertToOrder(activeLead.id, {
+    await convertToOrder(activeLead, {
       paymentType,
       courier: selectedCourier,
       transactionId
     });
-    toast.success(`Successfully converted ${activeLead.name || "Customer"} to order!`);
     setIsConvertingLead(false);
     setConvertModalOpen(false);
   };
 
   const handleBulkDelete = async () => {
     setIsDeletingLead(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    selectedIds.forEach(id => deleteLead(id));
-    toast.warning(`Soft-deleted ${selectedIds.length} lead records.`);
-    setSelectedIds([]);
-    setIsDeletingLead(false);
+    try {
+      await Promise.all(selectedIds.map(id => deleteLeadApi(id)));
+      setLeads(prev => prev.filter(l => !selectedIds.includes(l.id)));
+      toast.warning(`Deleted ${selectedIds.length} lead records.`);
+      setSelectedIds([]);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Bulk delete failed");
+    } finally {
+      setIsDeletingLead(false);
+    }
   };
 
   // Columns matching screenshot exactly
@@ -260,7 +312,7 @@ export default function LeadListPage() {
         return (
           <select
             value={val}
-            onChange={(e) => updateLead(row.id, { status: e.target.value })}
+            onChange={(e) => updateLead(row.id, { status: e.target.value as string })}
             className={`text-[11px] font-bold rounded-lg px-2 py-1 outline-none border cursor-pointer appearance-none transition-all ${
               val === "Inprogress" || val === "In-Progress"
                 ? "bg-success/10 text-success border-success/20"
@@ -281,12 +333,13 @@ export default function LeadListPage() {
       header: "Reason Call",
       render: (val, row) => (
         <select
-          value={val || "CNR"}
-          onChange={(e) => updateLead(row.id, { reason_call: e.target.value })}
+          value={(row as any).reasonCallId || val || ""}
+          onChange={(e) => updateLead(row.id, { reason_call: e.target.value as string })}
           className="px-2.5 py-1.5 bg-background text-text-secondary rounded-lg font-semibold text-xs border border-border-ui/50 outline-none cursor-pointer appearance-none hover:border-primary-teal transition-all"
         >
-          {["CNR", "Wrong Number", "Switch Off", "Disconnected", "Call Busy", "Number off", " vichari ne kese"].map(r => (
-            <option key={r} value={r}>{r}</option>
+          <option value="">{val || "Select"}</option>
+          {reasonsOptions.map(r => (
+            <option key={r._id || r.id} value={r._id || r.id}>{r.name}</option>
           ))}
         </select>
       )

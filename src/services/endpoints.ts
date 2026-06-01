@@ -59,6 +59,18 @@ export interface EndPointApi {
 
   // Upload
   upload: string;
+
+  // Leads
+  leads: string;
+  leadCreate: string;
+  leadUpdate: string;
+  leadDelete: string;
+
+  // Orders
+  orders: string;
+  orderCreate: string;
+  orderUpdate: string;
+  orderDelete: string;
 }
 
 const endPointApi: EndPointApi = {
@@ -122,6 +134,18 @@ const endPointApi: EndPointApi = {
 
   // Upload
   upload: 'upload',
+
+  // Leads
+  leads: 'leads',
+  leadCreate: 'leads',
+  leadUpdate: 'leads',
+  leadDelete: 'leads',
+
+  // Orders
+  orders: 'orders',
+  orderCreate: 'orders',
+  orderUpdate: 'orders',
+  orderDelete: 'orders',
 };
 
 export default endPointApi;

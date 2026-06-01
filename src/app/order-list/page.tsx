@@ -11,6 +11,7 @@ import { Close } from "@mui/icons-material";
 import { FiEdit, FiTrash2, FiRefreshCcw } from "react-icons/fi";
 import { fetchProducts } from "../../services/productService";
 import { fetchUsers } from "../../services/userService";
+import { fetchOrders, createOrderApi, updateOrderApi, deleteOrderApi } from "../../services/orderService";
 
 export interface Order {
   id: string;
@@ -40,9 +41,7 @@ interface SelectedProductRow {
 }
 
 export default function OrderListPage() {
-  const [orders, setOrders] = useState<Order[]>([
-    { id: "1", leadId: "4", name: "Ramesh Patel", phone_number: "9012345678", product: "Wrixty Brahmi Mind Focus", amount: 890, quantity: 3, subtotal: 2670, grandTotal: 2670, date: "2026-05-28", paymentType: "COD", courier: "Delhivery", assginTo: "Vikram Singh", transactionId: "TXN90283019", status: "Dispatched" }
-  ]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [couriers, setCouriers] = useState<any[]>([
@@ -55,29 +54,69 @@ export default function OrderListPage() {
   React.useEffect(() => {
     const loadMasterData = async () => {
       try {
-        const [usersRes, prodsRes] = await Promise.all([
+        setIsFetchingData(true);
+        const [usersRes, prodsRes, ordersRes] = await Promise.all([
           fetchUsers({ page: 1, limit: 100 }),
-          fetchProducts({ page: 1, limit: 100 })
+          fetchProducts({ page: 1, limit: 100 }),
+          fetchOrders({ page: 1, limit: 100 })
         ]);
         setUsers(usersRes.data);
         setProducts(prodsRes.data);
+        // Map backend orders to frontend format
+        const mapped = ordersRes.data.map((o: any) => ({
+          id: o._id || o.id,
+          leadId: o.leadId?._id || o.leadId || "",
+          name: o.name,
+          phone_number: o.phone_number,
+          product: o.product || (o.products?.map((p: any) => p.name).join(", ") || ""),
+          amount: o.amount || 0,
+          quantity: o.quantity || 1,
+          subtotal: o.amount || 0,
+          grandTotal: o.grandTotal || o.amount || 0,
+          date: o.createdAt ? new Date(o.createdAt).toISOString().split('T')[0] : "",
+          paymentType: o.paymentType || "COD",
+          courier: o.courier || "",
+          assginTo: o.assginTo?.name || o.assginTo || "",
+          transactionId: o.transactionId || "",
+          status: o.status || "Dispatched"
+        }));
+        setOrders(mapped);
       } catch (err) {
         console.error(err);
+      } finally {
+        setIsFetchingData(false);
       }
     };
     loadMasterData();
   }, []);
 
-  const deleteOrder = (id: string) => {
-    setOrders(prev => prev.filter(o => o.id !== id));
+  const deleteOrder = async (id: string) => {
+    try {
+      await deleteOrderApi(id);
+      setOrders(prev => prev.filter(o => o.id !== id));
+      toast.warning("Order deleted.");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to delete order");
+    }
   };
 
-  const updateOrder = (id: string, updated: Partial<Order>) => {
-    setOrders(prev => prev.map(o => o.id === id ? { ...o, ...updated } : o));
+  const updateOrder = async (id: string, updated: Partial<Order>) => {
+    try {
+      await updateOrderApi(id, updated as any);
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, ...updated } : o));
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to update order");
+    }
   };
 
-  const addOrder = (o: Omit<Order, "id">) => {
-    setOrders(prev => [...prev, { ...o, id: Date.now().toString() }]);
+  const addOrder = async (o: Omit<Order, "id">) => {
+    try {
+      const created = await createOrderApi(o as any);
+      setOrders(prev => [...prev, { ...o, id: (created as any)._id || Date.now().toString() }]);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to create order");
+      throw err;
+    }
   };
 
   const toast = useToast();
@@ -179,19 +218,21 @@ export default function OrderListPage() {
     }
 
     setIsUpdatingOrder(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    updateOrder(activeOrder.id, {
-      paymentType,
-      transactionId: txnId,
-      courier,
-      product: modalSelectedProducts.map(p => p.name).join(", "),
-      grandTotal: totalAmount
-    });
-    
-    toast.success(`Order details updated successfully.`);
-    setIsUpdatingOrder(false);
-    setEditOpen(false);
+    try {
+      await updateOrder(activeOrder.id, {
+        paymentType,
+        transactionId: txnId,
+        courier,
+        product: modalSelectedProducts.map(p => p.name).join(", "),
+        grandTotal: totalAmount
+      });
+      toast.success(`Order details updated successfully.`);
+      setEditOpen(false);
+    } catch (_) {
+      // error toast shown inside updateOrder
+    } finally {
+      setIsUpdatingOrder(false);
+    }
   };
 
   // --- REPEAT ORDER LOGIC ---
@@ -213,36 +254,36 @@ export default function OrderListPage() {
     }
 
     setIsRepeatingOrder(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    addOrder({
-      leadId: activeOrder.leadId,
-      name: activeOrder.name,
-      phone_number: activeOrder.phone_number,
-      product: modalSelectedProducts.map(p => p.name).join(", "),
-      amount: modalSelectedProducts.length > 0 ? modalSelectedProducts[0].amount : 0,
-      quantity: modalSelectedProducts.reduce((sum, p) => sum + p.quantity, 0),
-      subtotal: totalAmount,
-      grandTotal: totalAmount,
-      date: new Date().toISOString().split("T")[0],
-      paymentType,
-      courier,
-      assginTo: activeOrder.assginTo,
-      transactionId: txnId,
-      status: "Dispatched"
-    });
-    
-    toast.success(`Repeat Order created successfully for ${activeOrder.name}!`);
-    setIsRepeatingOrder(false);
-    setRepeatOpen(false);
+    try {
+      await addOrder({
+        leadId: activeOrder.leadId,
+        name: activeOrder.name,
+        phone_number: activeOrder.phone_number,
+        product: modalSelectedProducts.map(p => p.name).join(", "),
+        amount: modalSelectedProducts.length > 0 ? modalSelectedProducts[0].amount : 0,
+        quantity: modalSelectedProducts.reduce((sum, p) => sum + p.quantity, 0),
+        subtotal: totalAmount,
+        grandTotal: totalAmount,
+        date: new Date().toISOString().split("T")[0],
+        paymentType,
+        courier,
+        assginTo: activeOrder.assginTo,
+        transactionId: txnId,
+        status: "Dispatched"
+      });
+      toast.success(`Repeat Order created for ${activeOrder.name}!`);
+      setRepeatOpen(false);
+    } catch (_) {
+      // error shown in addOrder
+    } finally {
+      setIsRepeatingOrder(false);
+    }
   };
 
   // --- DELETE LOGIC ---
   const handleDelete = async (id: string) => {
     setIsDeletingOrder(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    deleteOrder(id);
-    toast.warning("Order deleted.");
+    await deleteOrder(id);
     setIsDeletingOrder(false);
   };
 
