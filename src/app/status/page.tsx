@@ -1,7 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
-import { useMockDb, Status } from "../../context/MockDbContext";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  fetchStatuses,
+  createStatus,
+  updateStatus,
+  deleteStatus,
+  exportStatuses,
+  Status,
+} from "../../services/statusService";
+import { exportCopy, exportExcel, exportCSV, exportPDF } from "../../utils/exportUtils";
 import { Table, Column } from "../../components/common/Table";
 import { Delete, Edit } from "@mui/icons-material";
 import { Modal } from "../../components/common/Modal";
@@ -9,7 +17,17 @@ import { Input } from "../../components/common/Input";
 import { Button } from "../../components/common/Button";
 
 export default function StatusPage() {
-  const { statuses, addStatus, updateStatus, deleteStatus } = useMockDb();
+  const [statuses, setStatuses] = useState<Status[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  // Server-side pagination + search
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [search, setSearch] = useState("");
+  const [total, setTotal] = useState(0);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -17,36 +35,103 @@ export default function StatusPage() {
 
   const [name, setName] = useState("");
   const [color, setColor] = useState("#3b82f6");
+  const [formErrors, setFormErrors] = useState<{ name?: string }>({});
 
-  const handleCreate = (e: React.FormEvent) => {
+  const loadStatuses = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetchStatuses({ page, limit, search });
+      setStatuses(res.data);
+      setTotal(res.total);
+    } catch {
+      setError("Failed to load statuses. Make sure the backend is running.");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, limit, search]);
+
+  useEffect(() => {
+    loadStatuses();
+  }, [loadStatuses]);
+
+  const validate = () => {
+    const errors: { name?: string } = {};
+    if (!name.trim()) errors.name = "Status name is required";
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    addStatus({ name, color });
-    setModalOpen(false);
-    clear();
+    if (!validate()) return;
+    try {
+      await createStatus({ name, color });
+      setModalOpen(false);
+      clear();
+      loadStatuses();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to create status.");
+    }
   };
 
   const openEdit = (status: Status) => {
     setActiveStatus(status);
     setName(status.name);
     setColor(status.color);
+    setFormErrors({});
     setEditOpen(true);
   };
 
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
     if (!activeStatus) return;
-    updateStatus(activeStatus.id, { name, color });
-    setEditOpen(false);
-    clear();
+    try {
+      await updateStatus(activeStatus._id, { name, color });
+      setEditOpen(false);
+      clear();
+      loadStatuses();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to update status.");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteStatus(id);
+      loadStatuses();
+    } catch {
+      setError("Failed to delete status.");
+    }
   };
 
   const clear = () => {
     setName("");
     setColor("#3b82f6");
+    setActiveStatus(null);
+    setFormErrors({});
+  };
+
+  const exportFields = [
+    { key: 'name', header: 'Name' },
+    { key: 'color', header: 'Color' },
+  ];
+
+  const handleExport = async (type: 'copy' | 'excel' | 'csv' | 'pdf') => {
+    try {
+      setExportLoading(true);
+      const rows = await exportStatuses(search);
+      if (type === 'copy') { exportCopy(rows, exportFields); setCopySuccess(true); setTimeout(() => setCopySuccess(false), 2000); }
+      else if (type === 'excel') exportExcel(rows, exportFields, 'statuses');
+      else if (type === 'csv') exportCSV(rows, exportFields, 'statuses');
+      else if (type === 'pdf') exportPDF(rows, exportFields, 'Status List');
+    } catch { setError('Export failed. Please try again.'); }
+    finally { setExportLoading(false); }
   };
 
   const columns: Column<Status>[] = [
-    { key: "id", header: "No", render: (_, __, i) => i + 1, sortable: false },
+    { key: "_id", header: "No", render: (_, __, i) => (page - 1) * limit + i + 1, sortable: false },
     { key: "name", header: "Name" },
     {
       key: "color",
@@ -61,18 +146,10 @@ export default function StatusPage() {
       sortable: false,
       render: (_, row) => (
         <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => openEdit(row)}
-            className="p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded transition-all shadow-sm"
-            title="Edit Status"
-          >
+          <button onClick={() => openEdit(row)} className="p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded transition-all shadow-sm" title="Edit Status">
             <Edit className="w-3.5 h-3.5" />
           </button>
-          <button
-            onClick={() => deleteStatus(row.id)}
-            className="p-1.5 bg-rose-500 hover:bg-rose-400 text-white rounded transition-all shadow-sm"
-            title="Delete Status"
-          >
+          <button onClick={() => handleDelete(row._id)} className="p-1.5 bg-rose-500 hover:bg-rose-400 text-white rounded transition-all shadow-sm" title="Delete Status">
             <Delete className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -83,90 +160,83 @@ export default function StatusPage() {
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-zinc-950 p-6 border border-zinc-200 dark:border-zinc-900 rounded-md shadow-sm space-y-6">
-        
+
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-900 pb-4">
-          <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
-            Status List
-          </h2>
-          <Button
-            onClick={() => {
-              clear();
-              setModalOpen(true);
-            }}
-            variant="primary"
-          >
-            Add Status
-          </Button>
-        </div>
-
-        {/* Table Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-900 pb-4">
+        <div className="border-b border-zinc-100 dark:border-zinc-900 pb-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">Status List</h2>
+            <Button onClick={() => { clear(); setModalOpen(true); }} variant="primary">Add Status</Button>
+          </div>
+          {/* Export Buttons */}
           <div className="flex items-center gap-1.5">
-            <Button variant="primary" size="sm" className="px-3 text-xs">Copy</Button>
-            <Button variant="primary" size="sm" className="px-3 text-xs">Excel</Button>
-            <Button variant="primary" size="sm" className="px-3 text-xs">CSV</Button>
-            <Button variant="primary" size="sm" className="px-3 text-xs">PDF</Button>
-          </div>
-          <div className="text-xs text-zinc-500 flex items-center gap-1.5 font-medium">
-            Search:
-            <input
-              type="text"
-              placeholder=""
-              className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded py-1.5 px-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
-            />
+            <button onClick={() => handleExport('copy')} disabled={exportLoading}
+              className={`px-3 py-1 text-[10px] font-semibold rounded border transition-all disabled:opacity-50 ${
+                copySuccess ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+              }`}>{copySuccess ? 'Copied!' : 'Copy'}</button>
+            <button onClick={() => handleExport('excel')} disabled={exportLoading}
+              className="px-3 py-1 text-[10px] font-semibold rounded border bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all disabled:opacity-50">Excel</button>
+            <button onClick={() => handleExport('csv')} disabled={exportLoading}
+              className="px-3 py-1 text-[10px] font-semibold rounded border bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all disabled:opacity-50">CSV</button>
+            <button onClick={() => handleExport('pdf')} disabled={exportLoading}
+              className="px-3 py-1 text-[10px] font-semibold rounded border bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all disabled:opacity-50">PDF</button>
+            {exportLoading && <span className="text-[10px] text-zinc-400 ml-1">Exporting...</span>}
           </div>
         </div>
 
-        <Table data={statuses} columns={columns} searchable={false} />
+        {error && (
+          <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded px-3 py-2">
+            {error}
+          </div>
+        )}
+
+        <Table
+          data={statuses}
+          columns={columns}
+          searchable={true}
+          searchPlaceholder="Search statuses..."
+          idField="_id"
+          isLoading={loading}
+          serverSide={true}
+          totalCount={total}
+          currentPage={page}
+          rowsPerPage={limit}
+          onPageChange={(p, l) => { setPage(p); setLimit(l); }}
+          onSearchChange={(s) => { setSearch(s); setPage(1); }}
+          exportData={statuses}
+          exportFilename="statuses"
+        />
       </div>
 
       {/* Add Status Modal */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Add Status">
-        <form onSubmit={handleCreate} className="space-y-4">
-          <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+      <Modal isOpen={modalOpen} onClose={() => { setModalOpen(false); clear(); }} title="Add Status">
+        <form onSubmit={handleCreate} className="space-y-4" noValidate>
+          <div>
+            <Input label="Name" value={name} onChange={(e) => { setName(e.target.value); setFormErrors(p => ({ ...p, name: undefined })); }} />
+            {formErrors.name && <p className="text-rose-500 text-[11px] mt-1">{formErrors.name}</p>}
+          </div>
           <div className="flex flex-col gap-1.5">
             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Color</span>
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="w-full h-10 border border-zinc-250 rounded-md cursor-pointer bg-white"
-            />
+            <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-full h-10 border border-zinc-250 rounded-md cursor-pointer bg-white" />
           </div>
           <div className="flex justify-end pt-2">
-            <Button
-              type="submit"
-              variant="primary"
-              className="px-8"
-            >
-              Save
-            </Button>
+            <Button type="submit" variant="primary" className="px-8">Save</Button>
           </div>
         </form>
       </Modal>
 
       {/* Edit Status Modal */}
-      <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit Status">
-        <form onSubmit={handleEditSubmit} className="space-y-4">
-          <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+      <Modal isOpen={editOpen} onClose={() => { setEditOpen(false); clear(); }} title="Edit Status">
+        <form onSubmit={handleEditSubmit} className="space-y-4" noValidate>
+          <div>
+            <Input label="Name" value={name} onChange={(e) => { setName(e.target.value); setFormErrors(p => ({ ...p, name: undefined })); }} />
+            {formErrors.name && <p className="text-rose-500 text-[11px] mt-1">{formErrors.name}</p>}
+          </div>
           <div className="flex flex-col gap-1.5">
             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Color</span>
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="w-full h-10 border border-zinc-250 rounded-md cursor-pointer bg-white"
-            />
+            <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-full h-10 border border-zinc-250 rounded-md cursor-pointer bg-white" />
           </div>
           <div className="flex justify-end pt-2">
-            <Button
-              type="submit"
-              variant="primary"
-              className="bg-teal-800 hover:bg-teal-700 px-8"
-            >
-              Save
-            </Button>
+            <Button type="submit" variant="primary" className="bg-teal-800 hover:bg-teal-700 px-8">Save</Button>
           </div>
         </form>
       </Modal>

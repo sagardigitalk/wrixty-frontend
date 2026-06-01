@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { ChevronLeft, ChevronRight, UnfoldMore } from "@mui/icons-material";
 
 export interface Column<T> {
@@ -22,8 +22,18 @@ interface TableProps<T> {
   idField?: keyof T;
   rowsPerPageDefault?: number;
   isLoading?: boolean;
+
+  // Server-side mode: if provided, Table delegates pagination/search to parent
+  serverSide?: boolean;
+  totalCount?: number;          // total records from server
+  currentPage?: number;         // controlled page
+  rowsPerPage?: number;         // controlled limit
+  onPageChange?: (page: number, limit: number) => void;
+  onSearchChange?: (search: string) => void;
+
 }
 
+// ---- Table Component ----
 export function Table<T extends Record<string, any>>({
   data,
   columns,
@@ -35,18 +45,31 @@ export function Table<T extends Record<string, any>>({
   onSelectionChange,
   idField = "id" as keyof T,
   rowsPerPageDefault = 10,
-  isLoading = false
+  isLoading = false,
+  serverSide = false,
+  totalCount,
+  currentPage: controlledPage,
+  rowsPerPage: controlledLimit,
+  onPageChange,
+  onSearchChange,
 }: TableProps<T>) {
-  const [search, setSearch] = useState("");
+  // Internal state for client-side mode
+  const [internalSearch, setInternalSearch] = useState("");
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(rowsPerPageDefault);
+  const [internalPage, setInternalPage] = useState(1);
+  const [internalLimit, setInternalLimit] = useState(rowsPerPageDefault);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 1. Search Filter
+  // Active values
+  const activePage = serverSide ? (controlledPage ?? 1) : internalPage;
+  const activeLimit = serverSide ? (controlledLimit ?? rowsPerPageDefault) : internalLimit;
+
+  // 1. Client-side search filter
   const filteredData = React.useMemo(() => {
-    if (!search || !searchable) return data;
-    const query = search.toLowerCase();
+    if (serverSide) return data;
+    if (!internalSearch || !searchable) return data;
+    const query = internalSearch.toLowerCase();
     return data.filter(row => {
       const fields = searchFields || (Object.keys(row) as (keyof T)[]);
       return fields.some(f => {
@@ -55,68 +78,89 @@ export function Table<T extends Record<string, any>>({
         return String(val).toLowerCase().includes(query);
       });
     });
-  }, [data, search, searchable, searchFields]);
+  }, [data, internalSearch, searchable, searchFields, serverSide]);
 
-  // 2. Sorting
+  // 2. Sorting (client-side only)
   const sortedData = React.useMemo(() => {
-    if (!sortKey) return filteredData;
+    if (serverSide || !sortKey) return filteredData;
     const sorted = [...filteredData];
     sorted.sort((a, b) => {
       let aVal = a[sortKey];
       let bVal = b[sortKey];
-      
       if (typeof aVal === "string") aVal = aVal.toLowerCase();
       if (typeof bVal === "string") bVal = bVal.toLowerCase();
-
       if (aVal < bVal) return sortOrder === "asc" ? -1 : 1;
       if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
       return 0;
     });
     return sorted;
-  }, [filteredData, sortKey, sortOrder]);
+  }, [filteredData, sortKey, sortOrder, serverSide]);
 
   // 3. Pagination
-  const totalPages = Math.ceil(sortedData.length / rowsPerPage);
+  const total = serverSide ? (totalCount ?? data.length) : sortedData.length;
+  const totalPages = Math.max(1, Math.ceil(total / activeLimit));
+
   const paginatedData = React.useMemo(() => {
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    return sortedData.slice(startIndex, startIndex + rowsPerPage);
-  }, [sortedData, currentPage, rowsPerPage]);
+    if (serverSide) return data;
+    const start = (activePage - 1) * activeLimit;
+    return sortedData.slice(start, start + activeLimit);
+  }, [sortedData, activePage, activeLimit, serverSide, data]);
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
-      if (sortOrder === "asc") {
-        setSortOrder("desc");
-      } else {
-        setSortKey(null);
-      }
+      if (sortOrder === "asc") setSortOrder("desc");
+      else setSortKey(null);
     } else {
       setSortKey(key);
       setSortOrder("asc");
     }
-    setCurrentPage(1);
+    if (!serverSide) setInternalPage(1);
   };
 
+  const handleSearchChange = (value: string) => {
+    if (serverSide) {
+      if (searchTimeout.current) clearTimeout(searchTimeout.current);
+      searchTimeout.current = setTimeout(() => {
+        onSearchChange?.(value);
+        onPageChange?.(1, activeLimit);
+      }, 400);
+    } else {
+      setInternalSearch(value);
+      setInternalPage(1);
+    }
+  };
+
+  const handlePageChange = (page: number) => {
+    if (serverSide) onPageChange?.(page, activeLimit);
+    else setInternalPage(page);
+  };
+
+  const handleLimitChange = (limit: number) => {
+    if (serverSide) onPageChange?.(1, limit);
+    else { setInternalLimit(limit); setInternalPage(1); }
+  };
+
+  // Selection
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!onSelectionChange) return;
-    if (e.target.checked) {
-      const allIds = filteredData.map(r => String(r[idField]));
-      onSelectionChange(allIds);
-    } else {
-      onSelectionChange([]);
-    }
+    if (e.target.checked) onSelectionChange(filteredData.map(r => String(r[idField])));
+    else onSelectionChange([]);
   };
 
   const handleSelectRow = (id: string, checked: boolean) => {
     if (!onSelectionChange) return;
-    if (checked) {
-      onSelectionChange([...selectedIds, id]);
-    } else {
-      onSelectionChange(selectedIds.filter(item => item !== id));
-    }
+    if (checked) onSelectionChange([...selectedIds, id]);
+    else onSelectionChange(selectedIds.filter(item => item !== id));
   };
 
   const isAllSelected = filteredData.length > 0 && selectedIds.length === filteredData.length;
   const isSomeSelected = selectedIds.length > 0 && selectedIds.length < filteredData.length;
+
+
+
+
+  const startRecord = total === 0 ? 0 : (activePage - 1) * activeLimit + 1;
+  const endRecord = Math.min(activePage * activeLimit, total);
 
   return (
     <div className="w-full flex flex-col bg-card-bg border border-border-ui rounded-2xl shadow-soft overflow-hidden transition-all">
@@ -151,9 +195,7 @@ export function Table<T extends Record<string, any>>({
                   <input
                     type="checkbox"
                     checked={isAllSelected}
-                    ref={el => {
-                      if (el) el.indeterminate = isSomeSelected;
-                    }}
+                    ref={el => { if (el) el.indeterminate = isSomeSelected; }}
                     onChange={handleSelectAll}
                     className="w-4 h-4 text-primary-teal border-border-ui rounded focus:ring-primary-teal"
                   />
@@ -169,7 +211,7 @@ export function Table<T extends Record<string, any>>({
                 >
                   <div className="flex items-center gap-1.5">
                     {col.header}
-                    {col.sortable !== false && (
+                    {col.sortable !== false && !serverSide && (
                       <UnfoldMore className="w-3.5 h-3.5 opacity-60" />
                     )}
                   </div>
@@ -179,7 +221,7 @@ export function Table<T extends Record<string, any>>({
           </thead>
           <tbody className="divide-y divide-border-ui/50 relative">
             {isLoading ? (
-              Array.from({ length: Math.min(rowsPerPage, 5) }).map((_, rowIndex) => (
+              Array.from({ length: Math.min(activeLimit, 5) }).map((_, rowIndex) => (
                 <tr key={`skeleton-${rowIndex}`} className="animate-pulse bg-zinc-50/20 dark:bg-zinc-900/10">
                   {selectable && (
                     <td className="p-3.5 text-center">

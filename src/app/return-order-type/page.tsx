@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  fetchReturnOrderTypes,
+  createReturnOrderType,
+  updateReturnOrderType,
+  deleteReturnOrderType,
+  ReturnOrderType,
+} from "../../services/returnOrderTypeService";
 import { Table, Column } from "../../components/common/Table";
 import { Delete, Edit } from "@mui/icons-material";
 import { Modal } from "../../components/common/Modal";
@@ -8,44 +15,95 @@ import { Input } from "../../components/common/Input";
 import { Button } from "../../components/common/Button";
 
 export default function ReturnOrderTypePage() {
-  const [types, setTypes] = useState([
-    { id: "1", name: "RTO" },
-    { id: "2", name: "Damaged Item" },
-    { id: "3", name: "Customer Return" }
-  ]);
+  const [types, setTypes] = useState<ReturnOrderType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Server-side pagination + search
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [search, setSearch] = useState("");
+  const [total, setTotal] = useState(0);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [activeType, setActiveType] = useState<typeof types[0] | null>(null);
+  const [activeType, setActiveType] = useState<ReturnOrderType | null>(null);
   const [name, setName] = useState("");
+  const [formErrors, setFormErrors] = useState<{ name?: string }>({});
 
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    setTypes([...types, { id: Date.now().toString(), name }]);
-    setModalOpen(false);
-    setName("");
+  const loadTypes = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetchReturnOrderTypes({ page, limit, search });
+      setTypes(res.data);
+      setTotal(res.total);
+    } catch {
+      setError("Failed to load return order types. Make sure the backend is running.");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, limit, search]);
+
+  useEffect(() => {
+    loadTypes();
+  }, [loadTypes]);
+
+  const validate = () => {
+    const errors: { name?: string } = {};
+    if (!name.trim()) errors.name = "Return order type name is required";
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
-  const openEdit = (type: typeof types[0]) => {
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+    try {
+      await createReturnOrderType({ name });
+      setModalOpen(false);
+      setName("");
+      setFormErrors({});
+      loadTypes();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to create return order type.");
+    }
+  };
+
+  const openEdit = (type: ReturnOrderType) => {
     setActiveType(type);
     setName(type.name);
+    setFormErrors({});
     setEditOpen(true);
   };
 
-  const handleEdit = (e: React.FormEvent) => {
+  const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
     if (!activeType) return;
-    setTypes(types.map(t => t.id === activeType.id ? { ...t, name } : t));
-    setEditOpen(false);
-    setName("");
+    try {
+      await updateReturnOrderType(activeType._id, { name });
+      setEditOpen(false);
+      setName("");
+      setActiveType(null);
+      setFormErrors({});
+      loadTypes();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to update return order type.");
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setTypes(types.filter(t => t.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteReturnOrderType(id);
+      loadTypes();
+    } catch {
+      setError("Failed to delete return order type.");
+    }
   };
 
-  const columns: Column<typeof types[0]>[] = [
-    { key: "id", header: "No", render: (_, __, i) => i + 1, sortable: false },
+  const columns: Column<ReturnOrderType>[] = [
+    { key: "_id", header: "No", render: (_, __, i) => (page - 1) * limit + i + 1, sortable: false },
     { key: "name", header: "Name" },
     {
       key: "actions",
@@ -53,18 +111,10 @@ export default function ReturnOrderTypePage() {
       sortable: false,
       render: (_, row) => (
         <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => openEdit(row)}
-            className="p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded transition-all shadow-sm"
-            title="Edit"
-          >
+          <button onClick={() => openEdit(row)} className="p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded transition-all shadow-sm" title="Edit">
             <Edit className="w-3.5 h-3.5" />
           </button>
-          <button
-            onClick={() => handleDelete(row.id)}
-            className="p-1.5 bg-rose-500 hover:bg-rose-400 text-white rounded transition-all shadow-sm"
-            title="Delete"
-          >
+          <button onClick={() => handleDelete(row._id)} className="p-1.5 bg-rose-500 hover:bg-rose-400 text-white rounded transition-all shadow-sm" title="Delete">
             <Delete className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -75,72 +125,59 @@ export default function ReturnOrderTypePage() {
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-zinc-950 p-6 border border-zinc-200 dark:border-zinc-900 rounded-md shadow-sm space-y-6">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-900 pb-4">
-          <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
-            Retrun Order Type List
-          </h2>
-          <Button
-            onClick={() => {
-              setName("");
-              setModalOpen(true);
-            }}
-            variant="primary"
-          >
-            Add Retrun Order Type
-          </Button>
+          <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">Return Order Type List</h2>
+          <Button onClick={() => { setName(""); setFormErrors({}); setModalOpen(true); }} variant="primary">Add Return Order Type</Button>
         </div>
 
-        {/* Table Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-900 pb-4">
-          <div className="flex items-center gap-1.5">
-            <Button variant="primary" size="sm" className="px-3 text-xs">Copy</Button>
-            <Button variant="primary" size="sm" className="px-3 text-xs">Excel</Button>
-            <Button variant="primary" size="sm" className="px-3 text-xs">CSV</Button>
-            <Button variant="primary" size="sm" className="px-3 text-xs">PDF</Button>
+        {error && (
+          <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded px-3 py-2">
+            {error}
           </div>
-          <div className="text-xs text-zinc-500 flex items-center gap-1.5 font-medium">
-            Search:
-            <input
-              type="text"
-              placeholder=""
-              className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded py-1.5 px-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
-            />
-          </div>
-        </div>
+        )}
 
-        <Table data={types} columns={columns} searchable={false} />
+        <Table
+          data={types}
+          columns={columns}
+          searchable={true}
+          searchPlaceholder="Search return order types..."
+          idField="_id"
+          isLoading={loading}
+          serverSide={true}
+          totalCount={total}
+          currentPage={page}
+          rowsPerPage={limit}
+          onPageChange={(p, l) => { setPage(p); setLimit(l); }}
+          onSearchChange={(s) => { setSearch(s); setPage(1); }}
+          exportData={types}
+          exportFilename="return-order-types"
+        />
       </div>
 
       {/* Add Type Modal */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Add Retrun Order Type">
-        <form onSubmit={handleCreate} className="space-y-4">
-          <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+      <Modal isOpen={modalOpen} onClose={() => { setModalOpen(false); setName(""); setFormErrors({}); }} title="Add Return Order Type">
+        <form onSubmit={handleCreate} className="space-y-4" noValidate>
+          <div>
+            <Input label="Name" value={name} onChange={(e) => { setName(e.target.value); setFormErrors(p => ({ ...p, name: undefined })); }} />
+            {formErrors.name && <p className="text-rose-500 text-[11px] mt-1">{formErrors.name}</p>}
+          </div>
           <div className="flex justify-end pt-2">
-            <Button
-              type="submit"
-              variant="primary"
-              className="px-8"
-            >
-              Save
-            </Button>
+            <Button type="submit" variant="primary" className="px-8">Save</Button>
           </div>
         </form>
       </Modal>
 
       {/* Edit Type Modal */}
-      <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit Retrun Order Type">
-        <form onSubmit={handleEdit} className="space-y-4">
-          <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+      <Modal isOpen={editOpen} onClose={() => { setEditOpen(false); setName(""); setActiveType(null); setFormErrors({}); }} title="Edit Return Order Type">
+        <form onSubmit={handleEdit} className="space-y-4" noValidate>
+          <div>
+            <Input label="Name" value={name} onChange={(e) => { setName(e.target.value); setFormErrors(p => ({ ...p, name: undefined })); }} />
+            {formErrors.name && <p className="text-rose-500 text-[11px] mt-1">{formErrors.name}</p>}
+          </div>
           <div className="flex justify-end pt-2">
-            <Button
-              type="submit"
-              variant="primary"
-              className="px-8"
-            >
-              Save
-            </Button>
+            <Button type="submit" variant="primary" className="px-8">Save</Button>
           </div>
         </form>
       </Modal>
