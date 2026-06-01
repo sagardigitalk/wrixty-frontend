@@ -207,21 +207,21 @@ export default function OrderListPage() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => openEdit(row)}
-            className="p-2 text-text-secondary hover:text-primary-teal hover:bg-primary-teal/5 rounded-xl transition-all inline-flex items-center justify-center"
+            className="p-2 text-text-secondary hover:text-primary-teal hover:bg-primary-teal/5 rounded-lg transition-all inline-flex items-center justify-center"
             title="Edit Order"
           >
             <FiEdit className="w-4.5 h-4.5" />
           </button>
           <button
             onClick={() => handleDelete(row.id)}
-            className="p-2 text-text-secondary hover:text-error hover:bg-error/5 rounded-xl transition-all inline-flex items-center justify-center"
+            className="p-2 text-text-secondary hover:text-error hover:bg-error/5 rounded-lg transition-all inline-flex items-center justify-center"
             title="Delete Order"
           >
             <FiTrash2 className="w-4.5 h-4.5" />
           </button>
           <button
             onClick={() => openRepeat(row)}
-            className="p-2 text-text-secondary hover:text-success hover:bg-success/5 rounded-xl transition-all inline-flex items-center justify-center"
+            className="p-2 text-text-secondary hover:text-success hover:bg-success/5 rounded-lg transition-all inline-flex items-center justify-center"
             title="Repeat Order"
           >
             <FiRefreshCcw className="w-4.5 h-4.5" />
@@ -288,7 +288,7 @@ export default function OrderListPage() {
 
       {/* Select Products */}
       <div className="space-y-2">
-        <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">
+        <label className="text-xs font-semibold text-zinc-700  uppercase tracking-wider">
           Select Products
         </label>
         <div className="flex gap-2 items-center">
@@ -314,13 +314,13 @@ export default function OrderListPage() {
 
       {/* Selected Products Table */}
       <div className="space-y-2">
-        <h4 className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">
+        <h4 className="text-xs font-semibold text-zinc-700  uppercase tracking-wider">
           Selected Products
         </h4>
-        <div className="border border-zinc-200 dark:border-zinc-850 rounded overflow-hidden">
+        <div className="border border-zinc-200  rounded-lg overflow-hidden">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 font-semibold text-zinc-500">
+              <tr className="bg-zinc-50  border-b border-zinc-200  font-semibold text-zinc-500">
                 <th className="p-3">Product Name</th>
                 <th className="p-3">Amount</th>
                 <th className="p-3">Quantity</th>
@@ -328,27 +328,27 @@ export default function OrderListPage() {
                 <th className="p-3">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-150 dark:divide-zinc-800">
+            <tbody className="divide-y divide-zinc-150 ">
               {modalSelectedProducts.length > 0 ? (
                 modalSelectedProducts.map((row) => (
                   <tr key={row.id}>
-                    <td className="p-3 font-medium text-zinc-800 dark:text-zinc-200">{row.name}</td>
-                    <td className="p-3 font-medium text-zinc-700 dark:text-zinc-300">{row.amount}</td>
+                    <td className="p-3 font-medium text-zinc-800 ">{row.name}</td>
+                    <td className="p-3 font-medium text-zinc-700 ">{row.amount}</td>
                     <td className="p-3 w-28">
                       <input
                         type="number"
                         min="1"
                         value={row.quantity}
                         onChange={(e) => handleQtyChange(row.id, Number(e.target.value))}
-                        className="w-16 px-2 py-1 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded focus:ring-1 focus:ring-blue-500 outline-none"
+                        className="w-16 px-2 py-1 bg-white  border border-zinc-200  rounded-lg focus:ring-1 focus:ring-blue-500 outline-none"
                       />
                     </td>
-                    <td className="p-3 font-medium text-zinc-800 dark:text-zinc-200">{row.amount * row.quantity}</td>
+                    <td className="p-3 font-medium text-zinc-800 ">{row.amount * row.quantity}</td>
                     <td className="p-3">
                       <button
                         type="button"
                         onClick={() => handleRemoveProduct(row.id)}
-                        className="py-1 px-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded shadow-sm text-[10px] transition-all"
+                        className="py-1 px-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg shadow-sm text-[10px] transition-all"
                       >
                         Remove
                       </button>
@@ -357,7 +357,7 @@ export default function OrderListPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="p-6 text-center text-zinc-400 font-medium text-sm border-t-2 border-orange-500/30 bg-orange-50/20 dark:bg-orange-900/10">
+                  <td colSpan={5} className="p-6 text-center text-zinc-400 font-medium text-sm border-t-2 border-orange-500/30 bg-orange-50/20 ">
                     No products selected
                   </td>
                 </tr>
@@ -372,23 +372,23 @@ export default function OrderListPage() {
   return (
     <div className="space-y-6">
       
-      {/* Order List Main White Card matching screenshot */}
-      <div className="bg-card-bg p-8 border border-border-ui rounded-2xl shadow-soft space-y-6">
+      {/* Main Container without white card background */}
+      <div className="space-y-6">
         
-        {/* Card Header title and Date Range */}
-        <div className="flex items-center justify-between border-b border-border-ui/50 pb-6">
+        {/* Header with Title and Date Range */}
+        <div className="flex items-center justify-between pb-6">
           <h2 className="text-2xl font-bold text-text-primary">
             Order List
           </h2>
           <div className="flex items-center gap-4">
-            <span className="text-xs font-semibold text-text-secondary bg-background px-4 py-2 rounded-xl border border-border-ui/50">
+            <span className="text-xs font-semibold text-text-secondary bg-background px-4 py-2 rounded-lg border border-border-ui/50">
               📅 May 30, 2026 - May 30, 2026
             </span>
           </div>
         </div>
 
-        {/* Inline Filters & Action Buttons exactly matching screenshot layout */}
-        <div className="flex flex-wrap items-center gap-3 border-b border-border-ui/50 pb-6">
+        {/* Filter Toolbar */}
+        <div className="flex flex-wrap items-center gap-3 pb-6">
           <div className="w-full sm:w-auto sm:flex-1 min-w-[160px]">
             <Select
               value={filterProduct}
@@ -423,13 +423,13 @@ export default function OrderListPage() {
           <div className="flex items-center gap-2">
             <Button
               variant="primary"
-              className="rounded-xl px-6"
+              className="rounded-lg px-6"
             >
               Apply Filter
             </Button>
             <Button
               variant="outline"
-              className="rounded-xl px-6"
+              className="rounded-lg px-6"
               onClick={() => {
                 setFilterProduct("all");
                 setFilterAssignee("all");
@@ -440,7 +440,7 @@ export default function OrderListPage() {
             </Button>
             <Button
               variant="outline"
-              className="rounded-xl px-6"
+              className="rounded-lg px-6"
             >
               Export
             </Button>
@@ -455,8 +455,8 @@ export default function OrderListPage() {
       <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit Order" sizeClass="max-w-4xl" isLoading={isUpdatingOrder}>
         <form onSubmit={handleEditSubmit} className="space-y-4">
           {renderModalBody()}
-          <div className="flex items-center justify-end gap-4 border-t border-zinc-150 dark:border-zinc-800 pt-4 mt-2">
-            <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mr-auto">
+          <div className="flex items-center justify-end gap-4 border-t border-zinc-150  pt-4 mt-2">
+            <span className="text-sm font-semibold text-zinc-700  mr-auto">
               Total Amount: {totalAmount.toFixed(2)}
             </span>
             <Button
@@ -484,8 +484,8 @@ export default function OrderListPage() {
       <Modal isOpen={repeatOpen} onClose={() => setRepeatOpen(false)} title={`Repeat Order(${activeOrder?.name || "Customer"})`} sizeClass="max-w-4xl" isLoading={isRepeatingOrder}>
         <form onSubmit={handleRepeatSubmit} className="space-y-4">
           {renderModalBody()}
-          <div className="flex items-center justify-end gap-4 border-t border-zinc-150 dark:border-zinc-800 pt-4 mt-2">
-            <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mr-auto">
+          <div className="flex items-center justify-end gap-4 border-t border-zinc-150  pt-4 mt-2">
+            <span className="text-sm font-semibold text-zinc-700  mr-auto">
               Total Amount: {totalAmount}
             </span>
             <Button

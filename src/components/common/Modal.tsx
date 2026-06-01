@@ -40,7 +40,7 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/20 backdrop-blur-sm animate-fade-in">
       <div
-        className={`relative w-full ${sizeClass} bg-card-bg border border-border-ui rounded-2xl shadow-soft flex flex-col max-h-[90vh] animate-modal-in overflow-hidden`}
+        className={`relative w-full ${sizeClass} bg-card-bg border border-border-ui rounded-lg shadow-soft flex flex-col max-h-[90vh] animate-modal-in overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -55,7 +55,7 @@ export const Modal: React.FC<ModalProps> = ({
           <button
             onClick={onClose}
             disabled={isLoading}
-            className="p-1.5 hover:bg-background text-text-secondary hover:text-text-primary rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-1.5 hover:bg-background text-text-secondary hover:text-text-primary rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Close className="w-5 h-5" />
           </button>

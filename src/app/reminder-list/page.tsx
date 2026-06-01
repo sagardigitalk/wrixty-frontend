@@ -36,7 +36,7 @@ export default function ReminderListPage() {
           <button
             onClick={() => handleDelete(row.id)}
             disabled={isDeleting === row.id}
-            className="p-2 text-text-secondary hover:text-error hover:bg-error/5 rounded-xl transition-all inline-flex items-center justify-center disabled:opacity-50"
+            className="p-2 text-text-secondary hover:text-error hover:bg-error/5 rounded-lg transition-all inline-flex items-center justify-center disabled:opacity-50"
             title="Delete Reminder"
           >
             {isDeleting === row.id ? (
@@ -52,14 +52,14 @@ export default function ReminderListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-card-bg p-8 border border-border-ui rounded-2xl shadow-soft space-y-6">
+      <div className="bg-card-bg p-8 border border-border-ui rounded-lg shadow-soft space-y-6">
         
         {/* Header and Date Range */}
         <div className="flex items-center justify-between border-b border-border-ui/50 pb-6">
           <h2 className="text-2xl font-bold text-text-primary">
             Reminder List
           </h2>
-          <span className="text-xs font-semibold text-text-secondary bg-background px-4 py-2 rounded-xl border border-border-ui/50">
+          <span className="text-xs font-semibold text-text-secondary bg-background px-4 py-2 rounded-lg border border-border-ui/50">
             📅 May 30, 2026 - May 30, 2026
           </span>
         </div>

@@ -73,7 +73,7 @@ export default function ReturnOrderPage() {
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => handleOpenView(row)}
-            className="p-1.5 bg-green-600 hover:bg-green-500 text-white rounded transition-all shadow-sm"
+            className="p-1.5 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-all shadow-sm"
             title="View Details"
           >
             <Visibility className="w-3.5 h-3.5" />
@@ -95,24 +95,24 @@ export default function ReturnOrderPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-zinc-950 p-6 border border-zinc-200 dark:border-zinc-900 rounded-md shadow-sm space-y-6">
+      <div className="bg-white  p-6 border border-zinc-200  rounded-lg shadow-sm space-y-6">
         
         {/* Top Header Row with Dates and Add Button */}
-        <div className="flex flex-wrap items-center justify-between border-b border-zinc-100 dark:border-zinc-900 pb-4 gap-4">
-          <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 min-w-[200px]">
+        <div className="flex flex-wrap items-center justify-between border-b border-zinc-100  pb-4 gap-4">
+          <h2 className="text-xl font-bold text-zinc-800  min-w-[200px]">
             Return Order List
           </h2>
           
           <div className="flex flex-wrap items-center gap-6 flex-1 justify-center">
             <div className="flex flex-col gap-1">
               <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Order Date :</span>
-              <span className="text-xs font-semibold text-zinc-600 bg-zinc-50 dark:bg-zinc-900 px-3 py-1.5 rounded border border-zinc-200/50 dark:border-zinc-800">
+              <span className="text-xs font-semibold text-zinc-600 bg-zinc-50  px-3 py-1.5 rounded-lg border border-zinc-200/50 ">
                 📅 May 30, 2026 - May 30, 2026
               </span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Return Order Date :</span>
-              <span className="text-xs font-semibold text-zinc-600 bg-zinc-50 dark:bg-zinc-900 px-3 py-1.5 rounded border border-zinc-200/50 dark:border-zinc-800">
+              <span className="text-xs font-semibold text-zinc-600 bg-zinc-50  px-3 py-1.5 rounded-lg border border-zinc-200/50 ">
                 📅 May 30, 2026 - May 30, 2026
               </span>
             </div>
@@ -128,7 +128,7 @@ export default function ReturnOrderPage() {
         </div>
 
         {/* Filters Row */}
-        <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100 dark:border-zinc-900 pb-4">
+        <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100  pb-4">
           <div className="w-full sm:w-auto sm:flex-1 min-w-[160px]">
             <Select
               value={filterAssign}
@@ -199,11 +199,11 @@ export default function ReturnOrderPage() {
           </div>
 
           <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Selected Products</h4>
-            <div className="border border-zinc-200 dark:border-zinc-800 rounded-md overflow-hidden">
+            <h4 className="text-sm font-semibold text-zinc-700 ">Selected Products</h4>
+            <div className="border border-zinc-200  rounded-lg overflow-hidden">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400">
+                  <tr className="bg-white  border-b border-zinc-200  text-zinc-600 ">
                     <th className="p-3 font-semibold w-24">Select</th>
                     <th className="p-3 font-semibold">Product Name</th>
                     <th className="p-3 font-semibold">Order Date</th>
@@ -211,10 +211,10 @@ export default function ReturnOrderPage() {
                     <th className="p-3 font-semibold">Subtotal</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-zinc-950">
-                  <tr className="border-b border-zinc-100 dark:border-zinc-900">
+                <tbody className="bg-white ">
+                  <tr className="border-b border-zinc-100 ">
                     <td className="p-3">
-                      <input type="checkbox" className="rounded text-teal-800 focus:ring-teal-800" />
+                      <input type="checkbox" className="rounded-lg text-teal-800 focus:ring-teal-800" />
                     </td>
                     <td className="p-3"></td>
                     <td className="p-3"></td>
@@ -227,7 +227,7 @@ export default function ReturnOrderPage() {
           </div>
 
           <div className="flex flex-col items-end gap-3 pt-4">
-            <div className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+            <div className="text-sm font-semibold text-zinc-700 ">
               Grand Total: 0.00
             </div>
             <Button 
@@ -247,27 +247,27 @@ export default function ReturnOrderPage() {
       {/* Order Return Details Modal */}
       <Modal isOpen={viewOpen} onClose={() => setViewOpen(false)} title="Order Return Details" sizeClass="max-w-2xl">
         <div className="space-y-4">
-          <div className="border border-zinc-200 dark:border-zinc-800 rounded-md overflow-hidden">
+          <div className="border border-zinc-200  rounded-lg overflow-hidden">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 bg-white dark:bg-zinc-950">
+                <tr className="border-b border-zinc-200  text-zinc-600  bg-white ">
                   <th className="p-3 font-semibold">Product Name</th>
                   <th className="p-3 font-semibold">Qty</th>
                   <th className="p-3 font-semibold">Subtotal</th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-zinc-950">
-                <tr className="border-b border-zinc-100 dark:border-zinc-900">
-                  <td className="p-3 font-medium text-zinc-800 dark:text-zinc-200">{activeOrder?.product}</td>
-                  <td className="p-3 text-zinc-600 dark:text-zinc-400">{activeOrder?.quantity}</td>
-                  <td className="p-3 text-zinc-600 dark:text-zinc-400">{activeOrder?.amount?.toFixed(2)}</td>
+              <tbody className="bg-white ">
+                <tr className="border-b border-zinc-100 ">
+                  <td className="p-3 font-medium text-zinc-800 ">{activeOrder?.product}</td>
+                  <td className="p-3 text-zinc-600 ">{activeOrder?.quantity}</td>
+                  <td className="p-3 text-zinc-600 ">{activeOrder?.amount?.toFixed(2)}</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
           <div className="flex flex-col items-end gap-4 pt-4">
-            <div className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-800 rounded px-3 py-1.5 flex gap-2">
+            <div className="text-xs font-semibold text-zinc-800  border border-zinc-200  rounded-lg px-3 py-1.5 flex gap-2">
               <span>Grand Total:</span>
               <span>{activeOrder?.amount}</span>
             </div>

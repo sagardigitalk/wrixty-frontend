@@ -117,18 +117,18 @@ export default function AddLeadPage() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="bg-white dark:bg-zinc-950 p-6 border border-zinc-200 dark:border-zinc-900 rounded-md shadow-sm space-y-6">
+      <div className="bg-white  p-6 border border-zinc-200  rounded-lg shadow-sm space-y-6">
         
         {/* Header */}
-        <div className="flex items-center gap-4 border-b border-zinc-100 dark:border-zinc-900 pb-4">
+        <div className="flex items-center gap-4 border-b border-zinc-100  pb-4">
           <button 
             onClick={() => router.push("/lead-list")}
-            className="p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-500 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-zinc-100  text-zinc-500 transition-colors"
           >
             <ArrowBack className="w-5 h-5" />
           </button>
           <div>
-            <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
+            <h2 className="text-xl font-bold text-zinc-800 ">
               Add New Lead
             </h2>
             <p className="text-xs text-zinc-500 font-medium">Fill out the details to register a new lead in the system.</p>
@@ -180,20 +180,20 @@ export default function AddLeadPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-            <label className="flex items-center gap-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer mt-5">
+            <label className="flex items-center gap-2 text-xs font-semibold text-zinc-700  cursor-pointer mt-5">
               <input
                 type="checkbox"
                 checked={orderStatus}
                 onChange={(e) => setOrderStatus(e.target.checked)}
-                className="w-4 h-4 text-indigo-650 rounded border-zinc-300"
+                className="w-4 h-4 text-primary-teal rounded-lg border-zinc-300"
               />
               Convert to Order automatically
             </label>
             <Input label="Reminder" type="date" value={reminder} onChange={(e) => setReminder(e.target.value)} />
           </div>
 
-          <div className="border-t border-zinc-150 dark:border-zinc-800 pt-4 space-y-3 text-left">
-            <h4 className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Select Products</h4>
+          <div className="border-t border-zinc-150  pt-4 space-y-3 text-left">
+            <h4 className="text-sm font-bold text-zinc-700 ">Select Products</h4>
             <div className="flex gap-2.5 items-end">
               <div className="flex-1">
                 <Select
@@ -209,11 +209,11 @@ export default function AddLeadPage() {
           </div>
 
           <div className="space-y-3 text-left">
-            <h4 className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Selected Products</h4>
-            <div className="border border-zinc-200 dark:border-zinc-850 rounded overflow-hidden">
+            <h4 className="text-sm font-bold text-zinc-700 ">Selected Products</h4>
+            <div className="border border-zinc-200  rounded-lg overflow-hidden">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 font-semibold text-zinc-500 uppercase">
+                  <tr className="bg-zinc-50  border-b border-zinc-200  font-semibold text-zinc-500 uppercase">
                     <th className="p-3">Product Name</th>
                     <th className="p-3">Amount</th>
                     <th className="p-3">Quantity</th>
@@ -221,27 +221,27 @@ export default function AddLeadPage() {
                     <th className="p-3 text-center">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-150 dark:divide-zinc-800">
+                <tbody className="divide-y divide-zinc-150 ">
                   {modalSelectedProducts.length > 0 ? (
                     modalSelectedProducts.map((row) => (
                       <tr key={row.id}>
-                        <td className="p-3 font-medium text-zinc-800 dark:text-zinc-200">{row.name}</td>
-                        <td className="p-3 font-medium text-zinc-700 dark:text-zinc-300">₹{row.amount}</td>
+                        <td className="p-3 font-medium text-zinc-800 ">{row.name}</td>
+                        <td className="p-3 font-medium text-zinc-700 ">₹{row.amount}</td>
                         <td className="p-3 w-24">
                           <input
                             type="number"
                             min="1"
                             value={row.quantity}
                             onChange={(e) => handleQtyChange(row.id, Number(e.target.value))}
-                            className="w-16 px-2 py-1 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded focus:ring-1 focus:ring-indigo-500 outline-none text-center"
+                            className="w-16 px-2 py-1 bg-zinc-50  border border-zinc-200  rounded-lg focus:ring-1 focus:ring-primary-teal outline-none text-center"
                           />
                         </td>
-                        <td className="p-3 font-black text-zinc-800 dark:text-zinc-200">₹{row.amount * row.quantity}</td>
+                        <td className="p-3 font-black text-zinc-800 ">₹{row.amount * row.quantity}</td>
                         <td className="p-3 text-center">
                           <button
                             type="button"
                             onClick={() => handleRemoveProduct(row.id)}
-                            className="p-1 hover:bg-red-50 text-red-500 hover:text-red-600 rounded transition-colors"
+                            className="p-1 hover:bg-red-50 text-red-500 hover:text-red-600 rounded-lg transition-colors"
                           >
                             <Delete className="w-4 h-4" />
                           </button>
@@ -260,8 +260,8 @@ export default function AddLeadPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between border-t border-zinc-150 dark:border-zinc-800 pt-4 mt-2">
-            <span className="text-sm font-black text-zinc-700 dark:text-zinc-300">
+          <div className="flex items-center justify-between border-t border-zinc-150  pt-4 mt-2">
+            <span className="text-sm font-black text-zinc-700 ">
               Total Amount: ₹{totalAmount}
             </span>
             <div className="flex gap-3">

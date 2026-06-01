@@ -223,7 +223,7 @@ export default function LeadListPage() {
       render: (_, row) => (
         <button
           onClick={() => openNoteModal(row)}
-          className="p-2 text-text-secondary hover:text-primary-teal hover:bg-primary-teal/5 rounded-xl transition-all inline-flex items-center justify-center"
+          className="p-2 text-text-secondary hover:text-primary-teal hover:bg-primary-teal/5 rounded-lg transition-all inline-flex items-center justify-center"
           title={row.note || "No note"}
         >
           <FiFileText className="w-5 h-5" />
@@ -238,14 +238,14 @@ export default function LeadListPage() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => openEditModal(row)}
-            className="p-2 text-text-secondary hover:text-primary-teal hover:bg-primary-teal/5 rounded-xl transition-all inline-flex items-center justify-center"
+            className="p-2 text-text-secondary hover:text-primary-teal hover:bg-primary-teal/5 rounded-lg transition-all inline-flex items-center justify-center"
             title="Edit Lead"
           >
             <FiEdit className="w-4.5 h-4.5" />
           </button>
           <button
             onClick={() => deleteLead(row.id)}
-            className="p-2 text-text-secondary hover:text-error hover:bg-error/5 rounded-xl transition-all inline-flex items-center justify-center"
+            className="p-2 text-text-secondary hover:text-error hover:bg-error/5 rounded-lg transition-all inline-flex items-center justify-center"
             title="Delete Lead"
           >
             <FiTrash2 className="w-4.5 h-4.5" />
@@ -259,21 +259,21 @@ export default function LeadListPage() {
     <div className="space-y-6">
       
       {/* Lead List Main White Card matching screenshots */}
-      <div className="bg-card-bg p-8 border border-border-ui rounded-2xl shadow-soft space-y-6">
+      <div className="space-y-6">
         
         {/* Card Header title and Add button */}
-        <div className="flex items-center justify-between border-b border-border-ui/50 pb-6">
+        <div className="flex items-center justify-between pb-6">
           <h2 className="text-2xl font-bold text-text-primary">
             Lead List
           </h2>
           <div className="flex items-center gap-4">
-            <span className="text-xs font-semibold text-text-secondary bg-background px-4 py-2 rounded-xl border border-border-ui/50">
+            <span className="text-xs font-semibold text-text-secondary bg-background px-4 py-2 rounded-lg border border-border-ui/50">
               📅 May 30, 2026 - May 30, 2026
             </span>
             <Button
               onClick={() => router.push("/add-lead")}
               variant="primary"
-              className="rounded-xl px-6"
+              className="rounded-lg px-6"
             >
               Add Lead
             </Button>
@@ -281,7 +281,7 @@ export default function LeadListPage() {
         </div>
 
         {/* Inline Filters & Action Buttons exactly matching first screenshot layout */}
-        <div className="flex flex-wrap items-center gap-3 border-b border-border-ui/50 pb-6">
+        <div className="flex flex-wrap items-center gap-3 pb-6">
           <div className="w-full sm:w-auto sm:flex-1 min-w-[160px]">
             <Select
               value={filterProduct}
@@ -329,13 +329,13 @@ export default function LeadListPage() {
           <div className="flex items-center gap-2">
             <Button
               variant="primary"
-              className="rounded-xl"
+              className="rounded-lg"
             >
               Apply Filter
             </Button>
             <Button
               variant="outline"
-              className="rounded-xl"
+              className="rounded-lg"
               onClick={() => {
                 setFilterProduct("all");
                 setFilterAssignee("all");
@@ -347,13 +347,13 @@ export default function LeadListPage() {
             </Button>
             <Button
               variant="primary"
-              className="rounded-xl"
+              className="rounded-lg"
             >
               Assign Lead
             </Button>
             <Button
               variant="outline"
-              className="rounded-xl"
+              className="rounded-lg"
             >
               Export
             </Button>
@@ -362,7 +362,7 @@ export default function LeadListPage() {
 
         {/* Bulk Action Panel - only visible when items selected */}
         {selectedIds.length > 0 && (
-          <div className="flex items-center justify-between p-4 bg-primary-teal/5 border border-primary-teal/20 rounded-xl animate-fade-in">
+          <div className="flex items-center justify-between p-4 bg-gradient-subtle border border-primary-teal/20 rounded-lg animate-fade-in">
             <span className="text-sm font-bold text-primary-teal">
               {selectedIds.length} leads selected
             </span>
@@ -370,14 +370,14 @@ export default function LeadListPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="bg-card-bg border-primary-teal/20 text-primary-teal rounded-xl"
+                className="bg-card-bg border-primary-teal/20 text-primary-teal rounded-lg"
               >
                 <SwapHoriz className="w-4 h-4 mr-2" /> Bulk Assign
               </Button>
               <Button
                 variant="danger"
                 size="sm"
-                className="rounded-xl"
+                className="rounded-lg"
                 onClick={handleBulkDelete}
                 isLoading={isDeletingLead}
               >
@@ -437,7 +437,7 @@ export default function LeadListPage() {
       <Modal isOpen={convertModalOpen} onClose={() => setConvertModalOpen(false)} title="Convert Lead to Order" isLoading={isConvertingLead}>
         <form onSubmit={handleConvertSubmit} className="space-y-4">
           <p className="text-xs text-zinc-500 font-medium">
-            You are converting <span className="font-bold text-zinc-700 dark:text-zinc-300">{activeLead?.name || "Customer"}</span>'s lead into a final dispatched order.
+            You are converting <span className="font-bold text-zinc-700 ">{activeLead?.name || "Customer"}</span>'s lead into a final dispatched order.
           </p>
           <Select
             label="Payment Type"
@@ -476,12 +476,12 @@ export default function LeadListPage() {
       <Modal isOpen={noteModalOpen} onClose={() => setNoteModalOpen(false)} title="Lead Note">
         <form onSubmit={handleSaveNote} className="space-y-4">
           <p className="text-xs text-zinc-500 font-medium">
-            Adding a note for <span className="font-bold text-zinc-700 dark:text-zinc-300">{activeLead?.name || "Customer"}</span>
+            Adding a note for <span className="font-bold text-zinc-700 ">{activeLead?.name || "Customer"}</span>
           </p>
           <div className="space-y-1 text-left">
             <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Note Details</label>
             <textarea
-              className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded p-2 text-sm text-zinc-900 dark:text-zinc-100 focus:ring-1 focus:ring-indigo-500 outline-none"
+              className="w-full bg-white  border border-zinc-200  rounded-lg p-2 text-sm text-zinc-900  focus:ring-1 focus:ring-primary-teal outline-none"
               rows={4}
               placeholder="Write your note here..."
               value={noteText}

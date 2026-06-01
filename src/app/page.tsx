@@ -16,8 +16,8 @@ export default function EntryPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-100 font-sans">
-      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-indigo-500"></div>
+    <div className="min-h-screen bg-background flex items-center justify-center text-text-primary font-sans">
+      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary-teal"></div>
     </div>
   );
 }

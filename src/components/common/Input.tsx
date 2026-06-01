@@ -41,7 +41,7 @@ export const Input: React.FC<InputProps> = ({
             w-full px-4 py-2.5 text-sm bg-card-bg
             border border-border-ui
             text-text-primary
-            rounded-2xl transition-all duration-200 outline-none
+            rounded-lg transition-all duration-200 outline-none
             focus:border-primary-teal focus:ring-1 focus:ring-primary-teal/30
             placeholder:text-text-secondary/50
             disabled:bg-background disabled:text-text-secondary

@@ -69,13 +69,13 @@ export default function TeamListPage() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => openEdit(row)}
-            className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-indigo-500 rounded transition-all"
+            className="p-1 hover:bg-zinc-100  text-zinc-400 hover:text-primary-teal rounded-lg transition-all"
           >
             <Edit className="w-4 h-4" />
           </button>
           <button
             onClick={() => deleteTeam(row.id)}
-            className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-red-500 rounded transition-all"
+            className="p-1 hover:bg-zinc-100  text-zinc-400 hover:text-red-500 rounded-lg transition-all"
           >
             <Delete className="w-4 h-4" />
           </button>
@@ -89,10 +89,10 @@ export default function TeamListPage() {
       {/* Header Panel */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-xl font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-50">
+          <h2 className="text-xl font-black uppercase tracking-wider text-zinc-900 ">
             Teams List
           </h2>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-wider">
+          <p className="text-xs text-zinc-500  font-semibold uppercase tracking-wider">
             Group agents under regional or target teams
           </p>
         </div>
@@ -101,7 +101,7 @@ export default function TeamListPage() {
             clear();
             setModalOpen(true);
           }}
-          className="flex items-center gap-1 py-1.5 px-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-wider rounded-md shadow-sm transition-all"
+          className="flex items-center gap-1 py-1.5 px-3.5 bg-primary-teal hover:bg-primary-teal text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all"
         >
           <Add className="w-4 h-4" /> Create Team
         </button>
@@ -121,7 +121,7 @@ export default function TeamListPage() {
           />
           <div className="space-y-2">
             <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block">Select Team Members</span>
-            <div className="grid grid-cols-2 gap-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-md">
+            <div className="grid grid-cols-2 gap-2 bg-zinc-50  border border-zinc-200  p-3 rounded-lg">
               {users.map(u => (
                 <label key={u.id} className="flex items-center gap-2 text-xs font-medium cursor-pointer">
                   <input
@@ -131,7 +131,7 @@ export default function TeamListPage() {
                       if (e.target.checked) setMembers([...members, u.name]);
                       else setMembers(members.filter(m => m !== u.name));
                     }}
-                    className="w-4 h-4 text-indigo-600 rounded"
+                    className="w-4 h-4 text-primary-teal rounded-lg"
                   />
                   {u.name}
                 </label>
@@ -140,7 +140,7 @@ export default function TeamListPage() {
           </div>
           <button
             type="submit"
-            className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold uppercase tracking-wider text-xs rounded-md shadow transition-all"
+            className="w-full py-2 bg-primary-teal hover:bg-primary-teal text-white font-bold uppercase tracking-wider text-xs rounded-lg shadow transition-all"
           >
             Register Team
           </button>
@@ -159,7 +159,7 @@ export default function TeamListPage() {
           />
           <div className="space-y-2">
             <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block">Select Team Members</span>
-            <div className="grid grid-cols-2 gap-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-md">
+            <div className="grid grid-cols-2 gap-2 bg-zinc-50  border border-zinc-200  p-3 rounded-lg">
               {users.map(u => (
                 <label key={u.id} className="flex items-center gap-2 text-xs font-medium cursor-pointer">
                   <input
@@ -169,7 +169,7 @@ export default function TeamListPage() {
                       if (e.target.checked) setMembers([...members, u.name]);
                       else setMembers(members.filter(m => m !== u.name));
                     }}
-                    className="w-4 h-4 text-indigo-600 rounded"
+                    className="w-4 h-4 text-primary-teal rounded-lg"
                   />
                   {u.name}
                 </label>
@@ -178,7 +178,7 @@ export default function TeamListPage() {
           </div>
           <button
             type="submit"
-            className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold uppercase tracking-wider text-xs rounded-md shadow transition-all"
+            className="w-full py-2 bg-primary-teal hover:bg-primary-teal text-white font-bold uppercase tracking-wider text-xs rounded-lg shadow transition-all"
           >
             Save Changes
           </button>

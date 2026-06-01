@@ -26,7 +26,7 @@ export default function RestoreDataPage() {
       render: (_, row) => (
         <button
           onClick={() => restoreLead(row.id)}
-          className="flex items-center gap-1 py-1 px-2.5 bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-600 hover:text-white text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 rounded transition-all"
+          className="flex items-center gap-1 py-1 px-2.5 bg-primary-teal/10 border border-primary-teal/20 hover:bg-primary-teal hover:text-white text-[10px] font-extrabold uppercase tracking-wider text-primary-teal rounded-lg transition-all"
         >
           <Restore className="w-3.5 h-3.5" /> Restore
         </button>
@@ -38,10 +38,10 @@ export default function RestoreDataPage() {
     <div className="space-y-6">
       {/* Header Panel */}
       <div className="space-y-1">
-        <h2 className="text-xl font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-50">
+        <h2 className="text-xl font-black uppercase tracking-wider text-zinc-900 ">
           Restore Deleted Data
         </h2>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-wider">
+        <p className="text-xs text-zinc-500  font-semibold uppercase tracking-wider">
           Inspect and restore soft-deleted leads
         </p>
       </div>

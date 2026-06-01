@@ -30,36 +30,36 @@ export default function ProfileDetailsPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Header Panel */}
       <div className="space-y-1 text-left">
-        <h2 className="text-xl font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-50">
+        <h2 className="text-xl font-black uppercase tracking-wider text-zinc-900 ">
           Superadmin Profile
         </h2>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-wider">
+        <p className="text-xs text-zinc-500  font-semibold uppercase tracking-wider">
           Configure security settings and admin credentials
         </p>
       </div>
 
-      <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-md p-6 shadow-sm">
+      <div className="bg-white  border border-zinc-200  rounded-lg p-6 shadow-sm">
         {success && (
-          <div className="mb-4 p-3 text-xs bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider rounded-md">
+          <div className="mb-4 p-3 text-xs bg-primary-teal/10 border border-primary-teal/20 text-primary-teal  font-bold uppercase tracking-wider rounded-lg">
             {success}
           </div>
         )}
         {error && (
-          <div className="mb-4 p-3 text-xs bg-red-500/10 border border-red-500/20 text-red-500 font-bold uppercase tracking-wider rounded-md">
+          <div className="mb-4 p-3 text-xs bg-red-500/10 border border-red-500/20 text-red-500 font-bold uppercase tracking-wider rounded-lg">
             {error}
           </div>
         )}
 
         <form onSubmit={handleUpdate} className="space-y-4">
-          <div className="flex items-center gap-4 border-b border-zinc-100 dark:border-zinc-900 pb-5 mb-5">
-            <div className="w-16 h-16 rounded-md bg-indigo-600 font-black text-white text-xl flex items-center justify-center shadow-lg uppercase">
+          <div className="flex items-center gap-4 border-b border-zinc-100  pb-5 mb-5">
+            <div className="w-16 h-16 rounded-lg bg-gradient-primary font-black text-white text-xl flex items-center justify-center shadow-lg uppercase">
               SA
             </div>
             <div className="text-left space-y-1">
-              <h4 className="text-sm font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-200">
+              <h4 className="text-sm font-bold uppercase tracking-wider text-text-primary">
                 Super Admin Account
               </h4>
-              <p className="text-[10px] text-zinc-400 uppercase tracking-widest font-extrabold">
+              <p className="text-[10px] text-text-secondary uppercase tracking-widest font-extrabold">
                 Primary Owner Role
               </p>
             </div>
@@ -68,7 +68,7 @@ export default function ProfileDetailsPage() {
           <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
           <Input label="Email Address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           
-          <div className="grid grid-cols-2 gap-4 pt-2 border-t border-zinc-100 dark:border-zinc-900 mt-2">
+          <div className="grid grid-cols-2 gap-4 pt-2 border-t border-zinc-100  mt-2">
             <Input
               label="New Password"
               type="password"
@@ -87,7 +87,7 @@ export default function ProfileDetailsPage() {
 
           <button
             type="submit"
-            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold uppercase tracking-wider text-xs rounded-md shadow-sm transition-all"
+            className="w-full py-2.5 bg-gradient-primary hover:opacity-90 text-white font-bold uppercase tracking-wider text-xs rounded-lg shadow-md transition-all active:scale-[0.98]"
           >
             Update Profile Setup
           </button>

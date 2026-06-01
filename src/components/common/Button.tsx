@@ -18,7 +18,7 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseClasses = "inline-flex items-center justify-center font-bold rounded-lg transition-all outline-none focus:ring-2 focus:ring-offset-1 dark:focus:ring-offset-zinc-950";
+  const baseClasses = "inline-flex items-center justify-center font-bold rounded-lg transition-all outline-none focus:ring-2 focus:ring-offset-1 ";
   
   const sizeClasses = {
     sm: "py-1.5 px-3 text-xs font-semibold",
@@ -27,7 +27,7 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const variantClasses = {
-    primary: "bg-primary-teal hover:opacity-90 text-white focus:ring-primary-teal shadow-soft",
+    primary: "bg-gradient-primary hover:opacity-95 text-white focus:ring-primary-teal shadow-md active:scale-[0.98]",
     secondary: "bg-secondary-cyan hover:opacity-90 text-white focus:ring-secondary-cyan shadow-soft",
     danger: "bg-error hover:opacity-90 text-white focus:ring-error shadow-soft",
     success: "bg-success hover:opacity-90 text-white focus:ring-success shadow-soft",

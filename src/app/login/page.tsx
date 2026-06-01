@@ -48,12 +48,12 @@ export default function LoginPage() {
       <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 rounded-full bg-secondary-cyan/5 blur-3xl pointer-events-none"></div>
 
       <div className="w-full max-w-md relative z-10">
-        <div className="bg-card-bg border border-border-ui p-10 rounded-2xl shadow-soft text-center space-y-8">
+        <div className="bg-card-bg border border-border-ui p-10 rounded-lg shadow-soft text-center space-y-8">
           <div className="space-y-3">
-            <div className="w-14 h-14 mx-auto rounded-xl bg-primary-teal flex items-center justify-center font-black text-white text-xl shadow-soft tracking-wider">
+            <div className="w-14 h-14 mx-auto rounded-lg bg-gradient-primary flex items-center justify-center font-black text-white text-xl shadow-md tracking-wider">
               WA
             </div>
-            <h1 className="text-2xl font-black tracking-widest text-text-primary uppercase">
+            <h1 className="text-2xl font-black tracking-widest text-gradient-primary uppercase">
               Wrixty Ayurveda
             </h1>
             <p className="text-xs text-text-secondary font-semibold tracking-wider uppercase">
@@ -62,7 +62,7 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="p-3 text-xs bg-error/10 border border-error/20 text-error rounded-xl text-left font-medium">
+            <div className="p-3 text-xs bg-error/10 border border-error/20 text-error rounded-lg text-left font-medium">
               {error}
             </div>
           )}

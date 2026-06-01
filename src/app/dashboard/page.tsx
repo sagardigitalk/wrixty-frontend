@@ -112,8 +112,9 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Welcome Block */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card-bg p-8 border border-border-ui rounded-2xl shadow-soft">
-        <div className="space-y-1">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-subtle p-8 border border-border-ui rounded-lg shadow-soft relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary-teal/5 blur-3xl rounded-full -mr-32 -mt-32"></div>
+        <div className="space-y-1 relative z-10">
           <h2 className="text-2xl font-black uppercase tracking-wider text-text-primary">
             Ayurvedic Dashboard
           </h2>
@@ -121,7 +122,7 @@ export default function DashboardPage() {
             Real-time analytics and staff metrics overview
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-primary-teal/5 border border-primary-teal/10 px-4 py-2 rounded-xl">
+        <div className="flex items-center gap-2 bg-white/50 backdrop-blur-sm border border-primary-teal/10 px-4 py-2 rounded-lg relative z-10">
           <TrendingUp className="w-4 h-4 text-primary-teal" />
           <span className="text-xs font-bold text-primary-teal uppercase tracking-wider">
             Return Rate: {returnRate}%
@@ -134,9 +135,10 @@ export default function DashboardPage() {
         {metrics.map((metric, i) => (
           <div
             key={i}
-            className="p-6 bg-card-bg border border-border-ui rounded-2xl shadow-soft flex items-center justify-between transition-all hover:border-primary-teal/20"
+            className="p-6 bg-card-bg border border-border-ui rounded-lg shadow-soft flex items-center justify-between transition-all hover:border-primary-teal/20 hover:shadow-md group relative overflow-hidden"
           >
-            <div className="space-y-2 text-left">
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-primary-teal to-secondary-cyan opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="space-y-2 text-left relative z-10">
               <span className="text-xs text-text-secondary font-bold uppercase tracking-wider">
                 {metric.name}
               </span>
@@ -147,7 +149,7 @@ export default function DashboardPage() {
                 {metric.desc}
               </p>
             </div>
-            <div className="p-4 bg-background border border-border-ui/50 rounded-xl">
+            <div className="p-4 bg-background border border-border-ui/50 rounded-lg group-hover:bg-primary-teal/5 transition-colors">
               {metric.icon}
             </div>
           </div>
@@ -161,7 +163,7 @@ export default function DashboardPage() {
           <h4 className="text-xs font-black uppercase tracking-wider text-text-secondary px-2">
             👥 Staff Performance Matrix
           </h4>
-          <div className="bg-card-bg p-6 border border-border-ui rounded-2xl shadow-soft">
+          <div className="bg-card-bg p-6 border border-border-ui rounded-lg shadow-soft">
             <Table data={staffStats} columns={staffColumns} searchable={false} />
           </div>
         </div>
@@ -171,7 +173,7 @@ export default function DashboardPage() {
           <h4 className="text-xs font-black uppercase tracking-wider text-text-secondary px-2">
             📦 Best Selling Products
           </h4>
-          <div className="bg-card-bg p-6 border border-border-ui rounded-2xl shadow-soft">
+          <div className="bg-card-bg p-6 border border-border-ui rounded-lg shadow-soft">
             <Table data={bestSellers} columns={productColumns} searchable={false} />
           </div>
         </div>

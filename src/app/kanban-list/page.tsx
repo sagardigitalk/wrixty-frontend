@@ -35,10 +35,10 @@ export default function KanbanListPage() {
     <div className="space-y-6">
       {/* Header Panel */}
       <div className="space-y-1">
-        <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
+        <h2 className="text-xl font-bold text-zinc-900 ">
           Kanban Board
         </h2>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium tracking-wide">
+        <p className="text-xs text-zinc-500  font-medium tracking-wide">
           Quickly advance leads across stages visually via drag & drop
         </p>
       </div>
@@ -52,17 +52,17 @@ export default function KanbanListPage() {
               key={stage.id}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, stage.name)}
-              className="w-72 shrink-0 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-md p-4 space-y-4 shadow-sm"
+              className="w-72 shrink-0 bg-white  border border-zinc-200  rounded-lg p-4 space-y-4 shadow-sm"
             >
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-900 pb-2">
+              <div className="flex items-center justify-between border-b border-zinc-100  pb-2">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: stage.color }} />
-                  <h4 className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  <h4 className="text-xs font-semibold text-zinc-700 ">
                     {stage.name}
                   </h4>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 bg-zinc-50 dark:bg-zinc-900 text-zinc-500 rounded border border-zinc-200 dark:border-zinc-800">
+                <span className="text-[10px] font-bold px-2 py-0.5 bg-zinc-50  text-zinc-500 rounded-lg border border-zinc-200 ">
                   {stageLeads.length}
                 </span>
               </div>
@@ -75,11 +75,11 @@ export default function KanbanListPage() {
                       key={lead.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, lead.id)}
-                      className={`group relative p-3.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/80 rounded-md shadow-sm text-left transition-all cursor-grab active:cursor-grabbing hover:shadow-md hover:border-indigo-300/50 dark:hover:border-indigo-500/50 ${draggedLeadId === lead.id ? 'opacity-50 border-dashed' : ''}`}
+                      className={`group relative p-3.5 bg-zinc-50  border border-zinc-200/50  rounded-lg shadow-sm text-left transition-all cursor-grab active:cursor-grabbing hover:shadow-md hover:border-primary-teal/30  ${draggedLeadId === lead.id ? 'opacity-50 border-dashed' : ''}`}
                     >
                       {/* Default Visible Content */}
                       <div>
-                        <h5 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wide">
+                        <h5 className="text-xs font-bold text-zinc-800  uppercase tracking-wide">
                           {lead.name}
                         </h5>
                         <p className="text-[10px] text-zinc-500 font-semibold">
@@ -88,18 +88,18 @@ export default function KanbanListPage() {
                       </div>
 
                       {/* Hover Expanded Content */}
-                      <div className="hidden group-hover:block pt-3 mt-3 space-y-2.5 border-t border-zinc-200 dark:border-zinc-800 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="hidden group-hover:block pt-3 mt-3 space-y-2.5 border-t border-zinc-200  animate-in fade-in slide-in-from-top-2 duration-200">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] px-1.5 py-0.5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold rounded">
+                          <span className="text-[10px] px-1.5 py-0.5 bg-primary-teal/10 text-primary-teal  font-bold rounded-lg">
                             {lead.product}
                           </span>
-                          <span className="text-[10px] font-black text-zinc-700 dark:text-zinc-300">
+                          <span className="text-[10px] font-black text-zinc-700 ">
                             ₹{lead.subtotal}
                           </span>
                         </div>
 
                         {lead.note && (
-                          <p className="text-[10px] text-zinc-500 dark:text-zinc-400 line-clamp-3 bg-zinc-100 dark:bg-zinc-800/50 p-2 rounded">
+                          <p className="text-[10px] text-zinc-500  line-clamp-3 bg-zinc-100  p-2 rounded-lg">
                             {lead.note}
                           </p>
                         )}
@@ -112,7 +112,7 @@ export default function KanbanListPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="flex items-center justify-center h-full min-h-[100px] border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50/50 dark:bg-zinc-900/50 text-[10px] text-zinc-400 dark:text-zinc-600 font-medium tracking-wide">
+                  <div className="flex items-center justify-center h-full min-h-[100px] border-2 border-dashed border-zinc-200  rounded-lg bg-zinc-50/50  text-[10px] text-zinc-400  font-medium tracking-wide">
                     Drop leads here
                   </div>
                 )}

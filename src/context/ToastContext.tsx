@@ -56,8 +56,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           let icon = <Info className="w-5 h-5 text-blue-500" />;
           let borderClass = "border-blue-500/20";
           if (t.type === "success") {
-            icon = <CheckCircle className="w-5 h-5 text-indigo-500" />;
-            borderClass = "border-indigo-500/20";
+            icon = <CheckCircle className="w-5 h-5 text-primary-teal" />;
+            borderClass = "border-primary-teal/20";
           } else if (t.type === "error") {
             icon = <ErrorIcon className="w-5 h-5 text-red-500" />;
             borderClass = "border-red-500/20";
@@ -70,8 +70,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             <div
               key={t.id}
               className={`
-                flex items-center gap-3 p-4 rounded-md shadow-2xl border
-                bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100
+                flex items-center gap-3 p-4 rounded-lg shadow-2xl border
+                bg-white  text-zinc-900 
                 transition-all duration-300 transform translate-y-0 scale-100
                 animate-fade-in
                 ${borderClass}
@@ -83,7 +83,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               </div>
               <button
                 onClick={() => removeToast(t.id)}
-                className="shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+                className="shrink-0 text-zinc-400 hover:text-zinc-600  transition-colors"
               >
                 <Close className="w-4 h-4" />
               </button>

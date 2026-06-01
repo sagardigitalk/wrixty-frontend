@@ -11,7 +11,6 @@ import {
   RestoreFromTrash,
   ShoppingCart,
   History,
-  Assignment,
   Notifications,
   ViewKanban,
   AssignmentReturn,
@@ -26,19 +25,18 @@ import {
   Person,
   Menu,
   Close,
-  DarkMode,
-  LightMode,
   Logout,
   KeyboardArrowDown,
   KeyboardArrowRight,
-  Apps
+  Apps,
+  Spa,
+  Description
 } from "@mui/icons-material";
 
 export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false); // default light-mode based on screenshot!
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<{name: string; email: string; avatar: string} | null>(null);
   
@@ -75,29 +73,7 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
         router.push("/dashboard");
       }
     }
-
-    // Theme Check
-    const storedTheme = localStorage.getItem("wrixty_theme");
-    if (storedTheme === "dark") {
-      setDarkMode(true);
-      document.documentElement.classList.add("dark");
-    } else {
-      setDarkMode(false);
-      document.documentElement.classList.remove("dark");
-    }
   }, [pathname, router]);
-
-  const toggleTheme = () => {
-    const nextDark = !darkMode;
-    setDarkMode(nextDark);
-    if (nextDark) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("wrixty_theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("wrixty_theme", "light");
-    }
-  };
 
   const handleLogout = () => {
     localStorage.removeItem("wrixty_authenticated");
@@ -116,9 +92,13 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-100 font-sans">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-indigo-500"></div>
-      </div>
+      <ToastProvider>
+        <MockDbProvider>
+          <div className="min-h-screen bg-background flex items-center justify-center text-text-primary font-sans">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary-teal"></div>
+          </div>
+        </MockDbProvider>
+      </ToastProvider>
     );
   }
 
@@ -129,9 +109,9 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
         key={path}
         href={path}
         onClick={() => setSidebarOpen(false)}
-        className={`flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-[13px] font-medium capitalize tracking-wide transition-all duration-205 ${
+        className={`flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[13px] font-medium capitalize tracking-wide transition-all duration-205 ${
           active
-            ? "bg-primary-teal text-white shadow-soft font-semibold"
+            ? "bg-gradient-primary text-white shadow-md font-semibold"
             : "text-text-secondary hover:bg-background hover:text-text-primary"
         }`}
       >
@@ -166,8 +146,9 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
           
           {/* Desktop Sidebar (Fixed & Independent Scrolling area) */}
           <aside className="hidden lg:flex flex-col w-64 border-r border-border-ui bg-card-bg shrink-0 h-full overflow-hidden">
-            <div className="h-16 flex items-center px-6 border-b border-border-ui shrink-0">
-              <span className="font-extrabold text-lg tracking-wider text-primary-teal font-sans">
+            <div className="h-16 flex items-center px-6 border-b border-border-ui shrink-0 gap-2 bg-gradient-to-b from-primary-teal/5 to-transparent">
+              <Spa className="text-primary-teal w-6 h-6" />
+              <span className="font-extrabold text-lg tracking-wider text-gradient-primary font-sans">
                 Wrixty
               </span>
             </div>
@@ -176,21 +157,21 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
             <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-1.5 no-scrollbar">
               {renderLink("Dashboards", "/dashboard", <DashboardIcon className="w-4.5 h-4.5" />)}
               {renderLink("Lead", "/lead-list", <People className="w-4.5 h-4.5" />)}
-              {renderLink("Restor Lead", "/restore-data", <RestoreFromTrash className="w-4.5 h-4.5" />)}
+              {renderLink("Restore Lead", "/restore-data", <RestoreFromTrash className="w-4.5 h-4.5" />)}
               {renderLink("Order", "/order-list", <ShoppingCart className="w-4.5 h-4.5" />)}
               {renderLink("Activity Log", "/activity-log", <History className="w-4.5 h-4.5" />)}
-              {renderLink("Lead Try", "/task-list", <Assignment className="w-4.5 h-4.5" />)}
+              {renderLink("Task List", "/task-list", <Description className="w-4.5 h-4.5" />)}
               {renderLink("Reminder List", "/reminder-list", <Notifications className="w-4.5 h-4.5" />)}
               {renderLink("Kanban", "/kanban-list", <ViewKanban className="w-4.5 h-4.5" />)}
               {renderLink("Return Order", "/return-order", <AssignmentReturn className="w-4.5 h-4.5" />)}
-              {renderLink("Currier", "/currier-list", <LocalShipping className="w-4.5 h-4.5" />)}
+              {renderLink("Courier", "/currier-list", <LocalShipping className="w-4.5 h-4.5" />)}
               {renderLink("Return Order Report", "/staff-return-order-list", <Assessment className="w-4.5 h-4.5" />)}
               
               {/* Collapsible Team Member Menu */}
               <div className="space-y-1 text-left">
                 <button
                   onClick={() => setTeamOpen(!teamOpen)}
-                  className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-[13px] font-medium capitalize tracking-wide text-text-secondary hover:bg-background transition-all duration-200"
+                  className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-[13px] font-medium capitalize tracking-wide text-text-secondary hover:bg-background transition-all duration-200"
                 >
                   <div className="flex items-center gap-3.5">
                     <Groups className="w-4.5 h-4.5" />
@@ -211,7 +192,7 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
               <div className="space-y-1 text-left">
                 <button
                   onClick={() => setMasterOpen(!masterOpen)}
-                  className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-[13px] font-medium capitalize tracking-wide text-text-secondary hover:bg-background transition-all duration-200"
+                  className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-[13px] font-medium capitalize tracking-wide text-text-secondary hover:bg-background transition-all duration-200"
                 >
                   <div className="flex items-center gap-3.5">
                     <Security className="w-4.5 h-4.5" />
@@ -233,7 +214,7 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
             <div className="p-4 border-t border-border-ui shrink-0">
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider text-error hover:bg-error/5 transition-all border border-error/20"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-bold uppercase tracking-wider text-error hover:bg-error/5 transition-all border border-error/20"
               >
                 <Logout className="w-4 h-4" />
                 Sign Out
@@ -246,8 +227,9 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
             <div className="fixed inset-0 z-50 lg:hidden flex h-full">
               <div className="fixed inset-0 bg-foreground/20 backdrop-blur-sm" onClick={() => setSidebarOpen(false)}></div>
               <aside className="relative flex flex-col w-64 max-w-xs bg-card-bg border-r border-border-ui animate-slide-in h-full overflow-hidden">
-                <div className="h-16 flex items-center px-6 border-b border-border-ui shrink-0">
-                  <span className="font-extrabold text-lg text-primary-teal">Wrixty</span>
+                <div className="h-16 flex items-center px-6 border-b border-border-ui shrink-0 gap-2">
+                  <Spa className="text-primary-teal w-6 h-6" />
+                  <span className="font-extrabold text-lg text-gradient-primary">Wrixty</span>
                   <button onClick={() => setSidebarOpen(false)} className="ml-auto text-text-secondary hover:text-text-primary">
                     <Close className="w-5 h-5" />
                   </button>
@@ -256,21 +238,21 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
                 <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-1.5 no-scrollbar">
                   {renderLink("Dashboards", "/dashboard", <DashboardIcon className="w-4.5 h-4.5" />)}
                   {renderLink("Lead", "/lead-list", <People className="w-4.5 h-4.5" />)}
-                  {renderLink("Restor Lead", "/restore-data", <RestoreFromTrash className="w-4.5 h-4.5" />)}
+                  {renderLink("Restore Lead", "/restore-data", <RestoreFromTrash className="w-4.5 h-4.5" />)}
                   {renderLink("Order", "/order-list", <ShoppingCart className="w-4.5 h-4.5" />)}
                   {renderLink("Activity Log", "/activity-log", <History className="w-4.5 h-4.5" />)}
-                  {renderLink("Lead Try", "/task-list", <Assignment className="w-4.5 h-4.5" />)}
+                  {renderLink("Task List", "/task-list", <Description className="w-4.5 h-4.5" />)}
                   {renderLink("Reminder List", "/reminder-list", <Notifications className="w-4.5 h-4.5" />)}
                   {renderLink("Kanban", "/kanban-list", <ViewKanban className="w-4.5 h-4.5" />)}
                   {renderLink("Return Order", "/return-order", <AssignmentReturn className="w-4.5 h-4.5" />)}
-                  {renderLink("Currier", "/currier-list", <LocalShipping className="w-4.5 h-4.5" />)}
+                  {renderLink("Courier", "/currier-list", <LocalShipping className="w-4.5 h-4.5" />)}
                   {renderLink("Return Order Report", "/staff-return-order-list", <Assessment className="w-4.5 h-4.5" />)}
                   
                   {/* Collapsible Mobile Team Member */}
                   <div className="space-y-1 text-left">
                     <button
                       onClick={() => setTeamOpen(!teamOpen)}
-                      className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-[13px] font-medium capitalize tracking-wide text-text-secondary hover:bg-background transition-all duration-200"
+                      className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-[13px] font-medium capitalize tracking-wide text-text-secondary hover:bg-background transition-all duration-200"
                     >
                       <div className="flex items-center gap-3.5">
                         <Groups className="w-4.5 h-4.5" />
@@ -291,7 +273,7 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
                   <div className="space-y-1 text-left">
                     <button
                       onClick={() => setMasterOpen(!masterOpen)}
-                      className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-[13px] font-medium capitalize tracking-wide text-text-secondary hover:bg-background transition-all duration-200"
+                      className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-[13px] font-medium capitalize tracking-wide text-text-secondary hover:bg-background transition-all duration-200"
                     >
                       <div className="flex items-center gap-3.5">
                         <Security className="w-4.5 h-4.5" />
@@ -313,7 +295,7 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
                 <div className="p-4 border-t border-border-ui shrink-0">
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider text-error hover:bg-error/5 transition-all border border-error/20"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-bold uppercase tracking-wider text-error hover:bg-error/5 transition-all border border-error/20"
                   >
                     <Logout className="w-4 h-4" />
                     Sign Out
@@ -326,7 +308,8 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
           {/* Right-side Main Content View (Sticky Header + Independent Scroll content) */}
           <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
             {/* Global Sticky Header with Glassmorphism, Premium Alignment, and Motion */}
-            <header className="h-16 flex items-center justify-between px-6 border-b border-border-ui/50 bg-card-bg/70 backdrop-blur-md sticky top-0 z-40 shrink-0 transition-all duration-300">
+            <header className="h-16 flex items-center justify-between px-6 border-b border-border-ui/50 bg-card-bg/80 backdrop-blur-md sticky top-0 z-40 shrink-0 transition-all duration-300">
+              <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-primary-teal/20 to-transparent"></div>
               <button
                 onClick={() => setSidebarOpen(true)}
                 className="lg:hidden text-text-secondary hover:text-text-primary transition-all active:scale-95 duration-150"
@@ -339,23 +322,15 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
                   Super Admin Console
                 </span>
                 <span className="text-border-ui">/</span>
-                <span className="text-xs font-medium text-text-secondary transition-all hover:text-text-primary cursor-pointer">
-                  Wrixty Ayurveda CRM
+                <span className="text-xs font-bold text-text-primary transition-all cursor-pointer capitalize">
+                  {pathname.split("/").filter(Boolean).pop()?.replace(/-/g, " ") || "Dashboard"}
                 </span>
               </div>
 
               {/* Exact Right Header User Info display matching screenshot */}
               <div className="flex items-center gap-5">
-                <button
-                  onClick={toggleTheme}
-                  className="p-2 text-text-secondary hover:bg-background rounded-xl transition-all duration-200 active:scale-90 hover:text-primary-teal"
-                  title="Toggle Theme"
-                >
-                  {darkMode ? <LightMode className="w-5 h-5" /> : <DarkMode className="w-5 h-5" />}
-                </button>
-
                 <div className="flex items-center gap-3 p-1 group cursor-pointer">
-                  <div className="w-9 h-9 rounded-xl bg-primary-teal text-white font-bold text-xs flex items-center justify-center shadow-soft transition-all duration-300 group-hover:scale-105 group-hover:rotate-3">
+                  <div className="w-9 h-9 rounded-lg bg-gradient-primary text-white font-bold text-xs flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-105 group-hover:rotate-3">
                     {currentUser?.avatar || "A"}
                   </div>
                   <div className="flex flex-col text-left transition-all duration-200 group-hover:translate-x-0.5">

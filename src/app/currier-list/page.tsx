@@ -47,13 +47,13 @@ export default function CourierListPage() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => openEdit(row)}
-            className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-indigo-500 rounded transition-all"
+            className="p-1 hover:bg-zinc-100  text-zinc-400 hover:text-primary-teal rounded-lg transition-all"
           >
             <Edit className="w-4 h-4" />
           </button>
           <button
             onClick={() => deleteCourier(row.id)}
-            className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-red-500 rounded transition-all"
+            className="p-1 hover:bg-zinc-100  text-zinc-400 hover:text-red-500 rounded-lg transition-all"
           >
             <Delete className="w-4 h-4" />
           </button>
@@ -67,10 +67,10 @@ export default function CourierListPage() {
       {/* Header Panel */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-xl font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-50">
+          <h2 className="text-xl font-black uppercase tracking-wider text-zinc-900 ">
             Courier List
           </h2>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-wider">
+          <p className="text-xs text-zinc-500  font-semibold uppercase tracking-wider">
             Manage dispatch delivery partners
           </p>
         </div>
@@ -79,7 +79,7 @@ export default function CourierListPage() {
             setName("");
             setModalOpen(true);
           }}
-          className="flex items-center gap-1 py-1.5 px-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-wider rounded-md shadow-sm transition-all"
+          className="flex items-center gap-1 py-1.5 px-3.5 bg-primary-teal hover:bg-primary-teal text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all"
         >
           <Add className="w-4 h-4" /> Add Courier
         </button>
@@ -93,7 +93,7 @@ export default function CourierListPage() {
           <Input label="Courier Name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="e.g. FedEx India" />
           <button
             type="submit"
-            className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold uppercase tracking-wider text-xs rounded-md shadow transition-all"
+            className="w-full py-2 bg-primary-teal hover:bg-primary-teal text-white font-bold uppercase tracking-wider text-xs rounded-lg shadow transition-all"
           >
             Register Courier
           </button>
@@ -106,7 +106,7 @@ export default function CourierListPage() {
           <Input label="Courier Name" value={name} onChange={(e) => setName(e.target.value)} required />
           <button
             type="submit"
-            className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold uppercase tracking-wider text-xs rounded-md shadow transition-all"
+            className="w-full py-2 bg-primary-teal hover:bg-primary-teal text-white font-bold uppercase tracking-wider text-xs rounded-lg shadow transition-all"
           >
             Save Changes
           </button>

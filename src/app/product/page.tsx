@@ -11,7 +11,7 @@ import {
 } from "../../services/productService";
 import { exportCopy, exportExcel, exportCSV, exportPDF } from "../../utils/exportUtils";
 import { Table, Column } from "../../components/common/Table";
-import { Delete, Edit } from "@mui/icons-material";
+import { Delete, Edit, Inventory, Label, Add } from "@mui/icons-material";
 import { Modal } from "../../components/common/Modal";
 import { Input } from "../../components/common/Input";
 import { Button } from "../../components/common/Button";
@@ -146,7 +146,16 @@ export default function ProductPage() {
 
   const columns: Column<Product>[] = [
     { key: "_id", header: "No", render: (_, __, i) => (page - 1) * limit + i + 1, sortable: false },
-    { key: "name", header: "Name" },
+    { 
+      key: "name", 
+      header: "Product Name",
+      render: (val) => (
+        <div className="flex items-center gap-2">
+          <Inventory className="text-primary-teal w-4 h-4" />
+          <span className="font-semibold">{val}</span>
+        </div>
+      )
+    },
     { key: "amount", header: "Amount", render: (val) => val?.toString() },
     { key: "cod_dicount", header: "Cod Discount", render: (val) => val?.toString() },
     { key: "prepad_disocount", header: "Prepaid Discount", render: (val) => val?.toString() },
@@ -156,10 +165,10 @@ export default function ProductPage() {
       sortable: false,
       render: (_, row) => (
         <div className="flex items-center gap-1.5">
-          <button onClick={() => openEdit(row)} className="p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded transition-all shadow-sm" title="Edit Product">
+          <button onClick={() => openEdit(row)} className="p-1.5 bg-primary-teal hover:bg-primary-teal text-white rounded-lg transition-all shadow-sm" title="Edit Product">
             <Edit className="w-3.5 h-3.5" />
           </button>
-          <button onClick={() => handleDelete(row._id)} className="p-1.5 bg-rose-500 hover:bg-rose-400 text-white rounded transition-all shadow-sm" title="Delete Product">
+          <button onClick={() => handleDelete(row._id)} className="p-1.5 bg-rose-500 hover:bg-rose-400 text-white rounded-lg transition-all shadow-sm" title="Delete Product">
             <Delete className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -169,30 +178,30 @@ export default function ProductPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-zinc-950 p-6 border border-zinc-200 dark:border-zinc-900 rounded-md shadow-sm space-y-6">
+      <div className="space-y-6">
 
-        {/* Header */}
-        <div className="border-b border-zinc-100 dark:border-zinc-900 pb-4 space-y-3">
+        {/* Header Block */}
+        <div className="pb-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">Product List</h2>
+            <h2 className="text-xl font-bold text-zinc-800 ">Product List</h2>
             <Button onClick={() => { clear(); setModalOpen(true); }} variant="primary">Add Product</Button>
           </div>
           {/* Export Buttons */}
           <div className="flex items-center gap-1.5">
             <button onClick={() => handleExport('copy')} disabled={exportLoading}
-              className={`px-3 py-1 text-[10px] font-semibold rounded border transition-all disabled:opacity-50 ${
-                copySuccess ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+              className={`px-3 py-1 text-[10px] font-semibold rounded-lg border transition-all disabled:opacity-50 ${
+                copySuccess ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white  border-zinc-200  text-zinc-600  hover:bg-zinc-50 '
               }`}>{copySuccess ? 'Copied!' : 'Copy'}</button>
             <button onClick={() => handleExport('excel')} disabled={exportLoading}
-              className="px-3 py-1 text-[10px] font-semibold rounded border bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all disabled:opacity-50">
+              className="px-3 py-1 text-[10px] font-semibold rounded-lg border bg-white  border-zinc-200  text-zinc-600  hover:bg-zinc-50  transition-all disabled:opacity-50">
               Excel
             </button>
             <button onClick={() => handleExport('csv')} disabled={exportLoading}
-              className="px-3 py-1 text-[10px] font-semibold rounded border bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all disabled:opacity-50">
+              className="px-3 py-1 text-[10px] font-semibold rounded-lg border bg-white  border-zinc-200  text-zinc-600  hover:bg-zinc-50  transition-all disabled:opacity-50">
               CSV
             </button>
             <button onClick={() => handleExport('pdf')} disabled={exportLoading}
-              className="px-3 py-1 text-[10px] font-semibold rounded border bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all disabled:opacity-50">
+              className="px-3 py-1 text-[10px] font-semibold rounded-lg border bg-white  border-zinc-200  text-zinc-600  hover:bg-zinc-50  transition-all disabled:opacity-50">
               PDF
             </button>
             {exportLoading && <span className="text-[10px] text-zinc-400 ml-1">Exporting...</span>}
@@ -200,7 +209,7 @@ export default function ProductPage() {
         </div>
 
         {error && (
-          <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded px-3 py-2">
+          <div className="text-sm text-rose-500 bg-rose-50  border border-rose-200  rounded-lg px-3 py-2">
             {error}
           </div>
         )}

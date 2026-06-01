@@ -9,7 +9,7 @@ import {
   ReturnOrderType,
 } from "../../services/returnOrderTypeService";
 import { Table, Column } from "../../components/common/Table";
-import { Delete, Edit } from "@mui/icons-material";
+import { Delete, Edit, AssignmentReturn, Add } from "@mui/icons-material";
 import { Modal } from "../../components/common/Modal";
 import { Input } from "../../components/common/Input";
 import { Button } from "../../components/common/Button";
@@ -104,17 +104,26 @@ export default function ReturnOrderTypePage() {
 
   const columns: Column<ReturnOrderType>[] = [
     { key: "_id", header: "No", render: (_, __, i) => (page - 1) * limit + i + 1, sortable: false },
-    { key: "name", header: "Name" },
+    { 
+      key: "name", 
+      header: "Type Name",
+      render: (val) => (
+        <div className="flex items-center gap-2">
+          <AssignmentReturn className="text-primary-teal w-4 h-4" />
+          <span className="font-semibold">{val}</span>
+        </div>
+      )
+    },
     {
       key: "actions",
       header: "Action",
       sortable: false,
       render: (_, row) => (
         <div className="flex items-center gap-1.5">
-          <button onClick={() => openEdit(row)} className="p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded transition-all shadow-sm" title="Edit">
+          <button onClick={() => openEdit(row)} className="p-1.5 bg-primary-teal hover:bg-primary-teal text-white rounded-lg transition-all shadow-sm" title="Edit">
             <Edit className="w-3.5 h-3.5" />
           </button>
-          <button onClick={() => handleDelete(row._id)} className="p-1.5 bg-rose-500 hover:bg-rose-400 text-white rounded transition-all shadow-sm" title="Delete">
+          <button onClick={() => handleDelete(row._id)} className="p-1.5 bg-rose-500 hover:bg-rose-400 text-white rounded-lg transition-all shadow-sm" title="Delete">
             <Delete className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -124,16 +133,16 @@ export default function ReturnOrderTypePage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-zinc-950 p-6 border border-zinc-200 dark:border-zinc-900 rounded-md shadow-sm space-y-6">
+      <div className="space-y-6">
 
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-900 pb-4">
-          <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">Return Order Type List</h2>
+        {/* Header Block */}
+        <div className="pb-4">
+          <h2 className="text-xl font-bold text-zinc-800 ">Return Order Type List</h2>
           <Button onClick={() => { setName(""); setFormErrors({}); setModalOpen(true); }} variant="primary">Add Return Order Type</Button>
         </div>
 
         {error && (
-          <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded px-3 py-2">
+          <div className="text-sm text-rose-500 bg-rose-50  border border-rose-200  rounded-lg px-3 py-2">
             {error}
           </div>
         )}
