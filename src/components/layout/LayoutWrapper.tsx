@@ -175,7 +175,7 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
             <div className="h-16 flex items-center px-6 border-b border-border-ui shrink-0 gap-2 bg-gradient-to-b from-primary-teal/5 to-transparent">
               <Spa className="text-primary-teal w-6 h-6" />
               <span className="font-extrabold text-lg tracking-wider text-gradient-primary font-sans">
-                Wrixty
+                CRM
               </span>
             </div>
             
@@ -259,7 +259,7 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
               <aside className="relative flex flex-col w-64 max-w-xs bg-card-bg border-r border-border-ui animate-slide-in h-full overflow-hidden">
                 <div className="h-16 flex items-center px-6 border-b border-border-ui shrink-0 gap-2">
                   <Spa className="text-primary-teal w-6 h-6" />
-                  <span className="font-extrabold text-lg text-gradient-primary">Wrixty</span>
+                  <span className="font-extrabold text-lg text-gradient-primary">CRM</span>
                   <button onClick={() => setSidebarOpen(false)} className="ml-auto text-text-secondary hover:text-text-primary">
                     <Close className="w-5 h-5" />
                   </button>

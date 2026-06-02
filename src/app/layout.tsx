@@ -9,8 +9,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Wrixty Ayurveda CRM",
-  description: "Advanced premium management portal for Wrixty Ayurveda",
+  title: "CRM",
+  description: "Advanced premium management portal for businesses to manage leads, tasks, and customer interactions with ease.",
 };
 
 export default function RootLayout({

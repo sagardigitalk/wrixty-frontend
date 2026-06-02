@@ -44,10 +44,6 @@ export default function LoginPage() {
     }
   };
 
-  const autofillAdmin = () => {
-    setEmail("Superadmin@gmail.com");
-    setPassword("12345678");
-  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans">
@@ -59,10 +55,10 @@ export default function LoginPage() {
         <div className="bg-card-bg border border-border-ui p-10 rounded-lg shadow-soft text-center space-y-8">
           <div className="space-y-3">
             <div className="w-14 h-14 mx-auto rounded-lg bg-gradient-primary flex items-center justify-center font-black text-white text-xl shadow-md tracking-wider">
-              WA
+              CRM
             </div>
             <h1 className="text-2xl font-black tracking-widest text-gradient-primary uppercase">
-              Wrixty Ayurveda
+              CRM
             </h1>
             <p className="text-xs text-text-secondary font-semibold tracking-wider uppercase">
               Sign In to Your Account
@@ -112,16 +108,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="pt-4 border-t border-border-ui/50">
-            <button
-              onClick={autofillAdmin}
-              className="text-[10px] font-bold uppercase tracking-widest text-text-secondary hover:text-primary-teal transition-all flex items-center justify-center gap-2 mx-auto"
-            >
-              <span className="w-4 h-[1px] bg-border-ui"></span>
-              Click to auto-fill demo credentials
-              <span className="w-4 h-[1px] bg-border-ui"></span>
-            </button>
-          </div>
+          
         </div>
       </div>
     </div>
