@@ -37,6 +37,9 @@ export interface PaginatedResponse<T> {
 export interface FetchParams {
   page?: number;
   limit?: number;
+  product?: string;
+  assginTo?: string;
+  courier?: string;
   search?: string;
 }
 

@@ -28,6 +28,10 @@ export interface PaginatedResponse<T> {
 export interface FetchParams {
   page?: number;
   limit?: number;
+  product?: string;
+  assgin?: string;
+  status?: string;
+  reason_call?: string;
   search?: string;
 }
 

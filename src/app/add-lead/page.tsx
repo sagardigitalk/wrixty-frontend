@@ -49,16 +49,16 @@ export default function AddLeadPage() {
         setStatusesOptions(statusRes.data);
         setReasonCallOptions(reasonRes.data);
         if (usersRes.data.length > 0) {
-          setAssignee(usersRes.data[0]._id || usersRes.data[0].id);
+          setAssignee((usersRes.data[0] as any)._id || (usersRes.data[0] as any).id);
         }
         if (prodsRes.data.length > 0) {
-          setCurrentSelectedProductId(prodsRes.data[0]._id || prodsRes.data[0].id);
+          setCurrentSelectedProductId((prodsRes.data[0] as any)._id || (prodsRes.data[0] as any).id);
         }
         if (statusRes.data.length > 0) {
-          setStatus(statusRes.data[0]._id || statusRes.data[0].id);
+          setStatus((statusRes.data[0] as any)._id || (statusRes.data[0] as any).id);
         }
         if (reasonRes.data.length > 0) {
-          setStatusTwo(reasonRes.data[0]._id || reasonRes.data[0].id);
+          setStatusTwo((reasonRes.data[0] as any)._id || (reasonRes.data[0] as any).id);
         }
       } catch (err) {
         console.error("Error loading master data", err);

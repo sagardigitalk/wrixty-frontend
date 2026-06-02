@@ -1,4 +1,8 @@
-"use client";
+import fs from 'fs';
+
+const filePath = 'c:\\Users\\LENOVO\\Desktop\\wixty\\wrixty-frontend\\src\\app\\lead-list\\page.tsx';
+
+const content = `"use client";
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -200,7 +204,7 @@ export default function LeadListPage() {
     try {
       await Promise.all(selectedIds.map(id => deleteLeadApi(id)));
       setLeads(prev => prev.filter(l => !selectedIds.includes(l.id)));
-      toast.warning(`Deleted ${selectedIds.length} lead records.`);
+      toast.warning(\`Deleted \${selectedIds.length} lead records.\`);
       setSelectedIds([]);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Bulk delete failed");
@@ -298,7 +302,7 @@ export default function LeadListPage() {
         transactionId,
         status: "Dispatched"
       } as any);
-      toast.success(`Successfully converted ${activeLead.name} to order!`);
+      toast.success(\`Successfully converted \${activeLead.name} to order!\`);
       setConvertModalOpen(false);
       loadLeadsData();
     } catch (err: any) {
@@ -313,7 +317,7 @@ export default function LeadListPage() {
     { key: "name", header: "Customer Name", render: (val) => val || "-" },
     { key: "phone_number", header: "Phone Number" },
     { key: "product", header: "Product Name" },
-    { key: "subtotal", header: "Total", render: (val) => `₹${val}` },
+    { key: "subtotal", header: "Total", render: (val) => \`₹\${val}\` },
     { key: "assgin", header: "Assign By" },
     { key: "date", header: "Date" },
     {
@@ -324,13 +328,13 @@ export default function LeadListPage() {
           <select
             value={val}
             onChange={(e) => updateLead(row.id, { status: e.target.value as string })}
-            className={`text-[11px] font-bold rounded-lg px-2 py-1 outline-none border cursor-pointer appearance-none transition-all ${
+            className={\`text-[11px] font-bold rounded-lg px-2 py-1 outline-none border cursor-pointer appearance-none transition-all \${
               val === "Inprogress" || val === "In-Progress"
                 ? "bg-success/10 text-success border-success/20"
                 : val === "Close" || val === "Closed"
                 ? "bg-error/10 text-error border-error/20"
                 : "bg-warning/10 text-warning border-warning/20"
-            }`}
+            }\`}
           >
             {statuses.map(s => (
               <option key={s.id} value={s.name}>{s.name}</option>
@@ -590,7 +594,7 @@ export default function LeadListPage() {
                   onChange={(e) => setCurrentSelectedProductId(e.target.value)}
                   options={[
                     { value: "", label: "Select a Product" },
-                    ...products.map(p => ({ value: p._id || p.id, label: `${p.name} (₹${p.amount})` }))
+                    ...products.map(p => ({ value: p._id || p.id, label: \`\${p.name} (₹\${p.amount})\` }))
                   ]}
                 />
               </div>
@@ -699,3 +703,7 @@ export default function LeadListPage() {
     </div>
   );
 }
+`;
+
+fs.writeFileSync(filePath, content);
+console.log('Successfully wrote exact contents of lead-list/page.tsx');

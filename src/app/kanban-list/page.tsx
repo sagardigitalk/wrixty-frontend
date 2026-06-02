@@ -1,31 +1,40 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { fetchStatuses } from "../../services/statusService";
+import { fetchLeads, updateLeadApi } from "../../services/leadService";
 
 export default function KanbanListPage() {
   const [statuses, setStatuses] = useState<any[]>([]);
-  const [leads, setLeads] = useState<any[]>([
-    { id: "1", name: "Rajesh Kumar", phone_number: "9988776655", product: "Wrixty Ashwagandha Gold", amount: 1200, quantity: 2, subtotal: 2400, assgin: "Aman Sharma", date: "2026-05-29", time: "10:30", status: "New", note: "Interested in stress relief products." },
-    { id: "2", name: "Suresh Gupta", phone_number: "8877665544", product: "Wrixty Triphala Digest", amount: 650, quantity: 1, subtotal: 650, assgin: "Priya Patel", date: "2026-05-29", time: "11:15", status: "Call Back", note: "Wants to consult with doctor first." },
-    { id: "3", name: "Neha Sharma", phone_number: "7766554433", product: "Wrixty Shatavari Hormonal Balance", amount: 1100, quantity: 1, subtotal: 1100, assgin: "Aman Sharma", date: "2026-05-30", time: "09:00", status: "In-Progress", note: "Inquiring about hormonal balance pack." },
-    { id: "4", name: "Ramesh Patel", phone_number: "9012345678", product: "Wrixty Brahmi Mind Focus", amount: 890, quantity: 3, subtotal: 2670, assgin: "Vikram Singh", date: "2026-05-28", time: "16:20", status: "Pending", note: "Asked for discount." }
-  ]);
+  const [leads, setLeads] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  React.useEffect(() => {
-    const loadStatuses = async () => {
+  useEffect(() => {
+    const loadData = async () => {
       try {
-        const res = await fetchStatuses({ page: 1, limit: 100 });
-        setStatuses(res.data);
+        const [statusesRes, leadsRes] = await Promise.all([
+          fetchStatuses({ page: 1, limit: 100 }),
+          fetchLeads({ page: 1, limit: 500 }) // fetching more for kanban board
+        ]);
+        setStatuses(statusesRes.data);
+        const mappedLeads = leadsRes.data.map((l: any) => ({
+          ...l,
+          id: l._id || l.id,
+          statusName: l.status?.name || l.status || "Open",
+          productName: l.product || (l.products?.map((p:any) => p.name).join(", ") || "No Product")
+        }));
+        setLeads(mappedLeads);
       } catch (err) {
         console.error(err);
+      } finally {
+        setIsLoading(false);
       }
     };
-    loadStatuses();
+    loadData();
   }, []);
 
-  const updateLead = (id: string, updated: Partial<any>) => {
-    setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updated } : l));
+  const updateLeadLocally = (id: string, updated: Partial<any>) => {
+    setLeads(prev => prev.map(l => (l._id || l.id) === id ? { ...l, ...updated } : l));
   };
 
   const activeLeads = React.useMemo(() => leads.filter(l => !l.isDeleted), [leads]);
@@ -36,19 +45,25 @@ export default function KanbanListPage() {
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, id: string) => {
     setDraggedLeadId(id);
     e.dataTransfer.effectAllowed = "move";
-    // Optional: set drag image or data
     e.dataTransfer.setData("text/plain", id);
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault(); // Necessary to allow dropping
+    e.preventDefault(); 
     e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, statusName: string) => {
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>, statusObj: any) => {
     e.preventDefault();
     if (draggedLeadId) {
-      updateLead(draggedLeadId, { status: statusName });
+      // Optimistic update locally
+      updateLeadLocally(draggedLeadId, { statusName: statusObj.name });
+      
+      try {
+        await updateLeadApi(draggedLeadId, { status: statusObj._id || statusObj.id });
+      } catch (err) {
+        console.error("Failed to update status on backend:", err);
+      }
     }
     setDraggedLeadId(null);
   };
@@ -68,12 +83,12 @@ export default function KanbanListPage() {
       {/* Board Scrollable container */}
       <div className="flex gap-4 overflow-x-auto pb-4 items-start select-none">
         {statuses.map((stage) => {
-          const stageLeads = activeLeads.filter(l => l.status === stage.name);
+          const stageLeads = activeLeads.filter(l => l.statusName === stage.name);
           return (
             <div
-              key={stage.id}
+              key={stage.id || stage._id}
               onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, stage.name)}
+              onDrop={(e) => handleDrop(e, stage)}
               className="w-72 shrink-0 bg-white  border border-zinc-200  rounded-lg p-4 space-y-4 shadow-sm"
             >
               {/* Header */}
@@ -113,7 +128,7 @@ export default function KanbanListPage() {
                       <div className="hidden group-hover:block pt-3 mt-3 space-y-2.5 border-t border-zinc-200  animate-in fade-in slide-in-from-top-2 duration-200">
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] px-1.5 py-0.5 bg-primary-teal/10 text-primary-teal  font-bold rounded-lg">
-                            {lead.product}
+                            {lead.productName}
                           </span>
                           <span className="text-[10px] font-black text-zinc-700 ">
                             ₹{lead.subtotal}
