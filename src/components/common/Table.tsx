@@ -200,9 +200,9 @@ export function Table<T extends Record<string, any>>({
                   />
                 </th>
               )}
-               {columns.map((col) => (
+               {columns.map((col, colIdx) => (
                 <th
-                  key={col.key}
+                  key={`${col.key}-${colIdx}`}
                   onClick={() => col.sortable !== false && handleSort(col.key)}
                   className={`p-4 text-xs font-semibold tracking-wide text-text-secondary select-none ${
                     col.sortable !== false ? "cursor-pointer hover:text-text-primary" : ""
@@ -227,8 +227,8 @@ export function Table<T extends Record<string, any>>({
                       <div className="w-4 h-4 bg-zinc-200  rounded-lg mx-auto"></div>
                     </td>
                   )}
-                  {columns.map((col) => (
-                    <td key={`skel-col-${col.key}`} className="p-3.5">
+                  {columns.map((col, colIdx) => (
+                    <td key={`skel-col-${col.key}-${colIdx}`} className="p-3.5">
                       <div className="h-3 bg-zinc-200  rounded-lg w-3/4 max-w-[120px]"></div>
                     </td>
                   ))}
@@ -240,7 +240,7 @@ export function Table<T extends Record<string, any>>({
                 const isSelected = selectedIds.includes(rowId);
                 return (
                   <tr
-                    key={rowId}
+                    key={`${rowId}-${rowIndex}`}
                     className={`group transition-colors ${
                       isSelected ? "bg-primary-teal/5" : "hover:bg-background/80"
                     }`}
@@ -255,8 +255,8 @@ export function Table<T extends Record<string, any>>({
                         />
                       </td>
                     )}
-                    {columns.map((col) => (
-                      <td key={`${rowId}-${col.key}`} className="p-4 text-xs text-text-primary">
+                    {columns.map((col, colIdx) => (
+                      <td key={`${rowId}-${col.key}-${colIdx}`} className="p-4 text-xs text-text-primary">
                         {col.render ? col.render(row[col.key], row, rowIndex) : String(row[col.key] ?? "")}
                       </td>
                     ))}

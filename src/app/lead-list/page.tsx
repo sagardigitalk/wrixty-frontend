@@ -523,7 +523,7 @@ export default function LeadListPage() {
             <Button
               variant="primary"
               className="rounded-lg"
-              onClick={loadLeadsData}
+              onClick={() => loadLeadsData()}
             >
               Apply Filter
             </Button>

@@ -313,7 +313,7 @@ export default function OrderListPage() {
     { key: "assginTo", header: "Assign To" },
     { key: "transactionId", header: "Transaction ID" },
     { key: "status", header: "Return Type", render: (val) => val === "Returned" ? val : "-" },
-    { key: "id", header: "Repart Order Total", render: (_, __, i) => i + 1 }, // Mock calculation
+    { key: "repartOrderTotal", header: "Repart Order Total", render: (_, __, i) => i + 1 }, // Mock calculation
     {
       key: "actions",
       header: "Action",
