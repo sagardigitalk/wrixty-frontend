@@ -102,7 +102,16 @@ export default function KanbanListPage() {
   };
 
   const updateLeadLocally = (id: string, updated: Partial<any>) => {
-    setLeads(prev => prev.map(l => (l._id || l.id) === id ? { ...l, ...updated } : l));
+    setLeads(prev => {
+      const leadIndex = prev.findIndex(l => (l._id || l.id) === id);
+      if (leadIndex === -1) return prev;
+      
+      const lead = { ...prev[leadIndex], ...updated };
+      const rest = prev.filter((_, i) => i !== leadIndex);
+      
+      // Move to the top (first) of the entire leads array so it appears first in its new column
+      return [lead, ...rest];
+    });
   };
 
   const activeLeads = React.useMemo(() => leads.filter(l => !l.isDeleted), [leads]);

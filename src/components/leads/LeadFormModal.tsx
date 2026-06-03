@@ -61,6 +61,7 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({
   const [couriers, setCouriers] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(true);
 
   useEffect(() => {
     fetchCouriers({ limit: 100, page: 1 }).then(res => {
@@ -76,7 +77,9 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({
     const userStr = localStorage.getItem("wrixty_authenticated_user");
     if (userStr) {
       try {
-        setCurrentUser(JSON.parse(userStr));
+        const parsed = JSON.parse(userStr);
+        setCurrentUser(parsed);
+        setIsAdmin(parsed?.roles?.some((r: string) => r.toLowerCase().includes('admin') || r.toLowerCase() === 'superadmin') || parsed?.email === 'superadmin@gmail.com');
       } catch(e) {}
     }
   }, []);
@@ -137,9 +140,9 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({
         
         // Handle Default Assignee
         if (currentUser) {
-          const isAdmin = currentUser?.roles?.some((r: string) => r.toLowerCase().includes('admin'));
           if (!isAdmin) {
-            setAssignee(currentUser._id || currentUser.id || "");
+            const loggedInMember = users.find(u => u._id === currentUser?._id || u.id === currentUser?._id || (currentUser?.email && u.email?.toLowerCase() === currentUser?.email?.toLowerCase()));
+            setAssignee(loggedInMember?._id || loggedInMember?.id || currentUser?._id || currentUser?.id || "");
           } else {
             setAssignee(users[0]?._id || users[0]?.id || "");
           }
@@ -339,11 +342,12 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({
             value={assignee}
             onChange={(e) => setAssignee(e.target.value)}
             required
+            disabled={!isAdmin}
             options={[
               { value: "", label: "Select User" },
-              ...(currentUser?.roles?.some((r: string) => r.toLowerCase().includes('admin'))
+              ...(isAdmin
                 ? users
-                : users.filter(u => u._id === currentUser?._id || u.id === currentUser?._id)
+                : users.filter(u => u._id === currentUser?._id || u.id === currentUser?._id || (currentUser?.email && u.email?.toLowerCase() === currentUser?.email?.toLowerCase()))
               ).map(u => ({ value: u._id || u.id, label: u.name }))
             ]}
           />

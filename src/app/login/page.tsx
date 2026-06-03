@@ -30,6 +30,8 @@ export default function LoginPage() {
       localStorage.setItem("wrixty_authenticated", "true");
       localStorage.setItem("wrixty_token", user.token); // Save JWT token!
       localStorage.setItem("wrixty_authenticated_user", JSON.stringify({
+        _id: user._id,
+        id: user._id,
         name: user.name,
         email: user.email,
         roles: user.roles,

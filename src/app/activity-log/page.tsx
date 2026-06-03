@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { fetchUsers } from "../../services/userService";
 import { fetchActivityLogs, ActivityLog } from "../../services/activityLogService";
+import { CalendarToday } from "@mui/icons-material";
 import { Table, Column } from "../../components/common/Table";
 import { Select } from "../../components/common/Select";
 import { Button } from "../../components/common/Button";

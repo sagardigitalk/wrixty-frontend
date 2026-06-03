@@ -35,7 +35,22 @@ export default function AddLeadPage() {
   const [reasonCallOptions, setReasonCallOptions] = useState<any[]>([]);
   const toast = useToast();
 
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(true);
+
   React.useEffect(() => {
+    const userStr = localStorage.getItem("wrixty_authenticated_user");
+    let loggedInUser: any = null;
+    let isUserAdmin = true;
+    if (userStr) {
+      try {
+        loggedInUser = JSON.parse(userStr);
+        setCurrentUser(loggedInUser);
+        isUserAdmin = loggedInUser?.roles?.some((r: string) => r.toLowerCase().includes('admin')) || loggedInUser?.email === 'superadmin@gmail.com';
+        setIsAdmin(isUserAdmin);
+      } catch(e) {}
+    }
+
     const loadMasterData = async () => {
       try {
         const [usersRes, prodsRes, statusRes, reasonRes] = await Promise.all([
@@ -48,7 +63,9 @@ export default function AddLeadPage() {
         setProducts(prodsRes.data);
         setStatusesOptions(statusRes.data);
         setReasonCallOptions(reasonRes.data);
-        if (usersRes.data.length > 0) {
+        if (loggedInUser && !isUserAdmin) {
+          setAssignee(loggedInUser._id || loggedInUser.id || "");
+        } else if (usersRes.data.length > 0) {
           setAssignee((usersRes.data[0] as any)._id || (usersRes.data[0] as any).id);
         }
         if (prodsRes.data.length > 0) {
@@ -253,7 +270,10 @@ export default function AddLeadPage() {
               onChange={(e) => setAssignee(e.target.value)}
               options={[
                 { value: "", label: "Select User" },
-                ...users.map(u => ({ value: u._id || u.id, label: u.name }))
+                ...(isAdmin
+                  ? users
+                  : users.filter(u => u._id === currentUser?._id || u.id === currentUser?._id || u._id === currentUser?.id)
+                ).map(u => ({ value: u._id || u.id, label: u.name }))
               ]}
             />
             <Input label="Note" value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Enter Note" />

@@ -12,7 +12,6 @@ import {
   ShoppingCart,
   History,
   Notifications,
-  ViewKanban,
   AssignmentReturn,
   LocalShipping,
   Assessment,
@@ -188,7 +187,6 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
               {hasPermission("Activity-log") && renderLink("Activity Log", "/activity-log", <History className="w-4.5 h-4.5" />)}
               {hasPermission("Lead-try") && renderLink("Lead-try", "/task-list", <Description className="w-4.5 h-4.5" />)}
               {hasPermission("Reminder-list") && renderLink("Reminder List", "/reminder-list", <Notifications className="w-4.5 h-4.5" />)}
-              {hasPermission("Kanban-view") && renderLink("Kanban", "/kanban-list", <ViewKanban className="w-4.5 h-4.5" />)}
               {hasPermission("Return-order-list") && renderLink("Return Order", "/return-order", <AssignmentReturn className="w-4.5 h-4.5" />)}
               {hasPermission("Currier-list") && renderLink("Courier", "/currier-list", <LocalShipping className="w-4.5 h-4.5" />)}
               {hasPermission("Return-order-report-view") && renderLink("Return Order Report", "/staff-return-order-list", <Assessment className="w-4.5 h-4.5" />)}
@@ -275,7 +273,6 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
                   {hasPermission("Activity-log") && renderLink("Activity Log", "/activity-log", <History className="w-4.5 h-4.5" />)}
                   {hasPermission("Lead-try") && renderLink("Task List", "/task-list", <Description className="w-4.5 h-4.5" />)}
                   {hasPermission("Reminder-list") && renderLink("Reminder List", "/reminder-list", <Notifications className="w-4.5 h-4.5" />)}
-                  {hasPermission("Kanban-view") && renderLink("Kanban", "/kanban-list", <ViewKanban className="w-4.5 h-4.5" />)}
                   {hasPermission("Return-order-list") && renderLink("Return Order", "/return-order", <AssignmentReturn className="w-4.5 h-4.5" />)}
                   {hasPermission("Currier-list") && renderLink("Courier", "/currier-list", <LocalShipping className="w-4.5 h-4.5" />)}
                   {hasPermission("Return-order-report-view") && renderLink("Return Order Report", "/staff-return-order-list", <Assessment className="w-4.5 h-4.5" />)}
