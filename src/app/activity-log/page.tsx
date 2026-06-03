@@ -8,6 +8,7 @@ import { Table, Column } from "../../components/common/Table";
 import { Select } from "../../components/common/Select";
 import { Button } from "../../components/common/Button";
 import { DateRangePicker } from "../../components/common/DateRangePicker";
+import { getAuthenticatedUser } from "../../utils/authUtils";
 
 export default function ActivityLogPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -26,13 +27,9 @@ export default function ActivityLogPage() {
   const [endDate, setEndDate] = useState<string | null>(getTodayString());
 
   useEffect(() => {
-    const userStr = localStorage.getItem("wrixty_authenticated_user");
-    if (userStr) {
-      try {
-        setCurrentUser(JSON.parse(userStr));
-      } catch (e) {
-        console.error(e);
-      }
+    const user = getAuthenticatedUser();
+    if (user) {
+      setCurrentUser(user);
     }
   }, []);
 

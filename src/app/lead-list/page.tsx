@@ -32,6 +32,7 @@ export interface Lead {
 }
 
 import { useToast } from "../../context/ToastContext";
+import { getAuthenticatedUser } from "../../utils/authUtils";
 import { Table, Column } from "../../components/common/Table";
 import { usePermission } from "../../utils/permissionUtils";
 import { Modal } from "../../components/common/Modal";
@@ -151,19 +152,16 @@ export default function LeadListPage() {
         console.error("Error loading master data", err);
       }
     };
-    const userStr = localStorage.getItem("wrixty_authenticated_user");
+    const user = getAuthenticatedUser();
     let initialAssigneeFilter = "all";
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        setCurrentUser(user);
-        const admin = user?.roles?.some((r: string) => r.toLowerCase().includes('admin'));
-        setIsAdmin(admin);
-        if (!admin) {
-          initialAssigneeFilter = user._id || user.id;
-          setFilterAssignee(initialAssigneeFilter);
-        }
-      } catch (e) { }
+    if (user) {
+      setCurrentUser(user);
+      const admin = user?.roles?.some((r: string) => r.toLowerCase().includes('admin'));
+      setIsAdmin(admin);
+      if (!admin) {
+        initialAssigneeFilter = user._id || user.id;
+        setFilterAssignee(initialAssigneeFilter);
+      }
     }
 
     loadMasterData();
@@ -443,7 +441,7 @@ export default function LeadListPage() {
               }`}
           >
             {statuses.map(s => (
-              <option key={s.id} value={s._id || s.id}>{s.name}</option>
+              <option key={s._id || s.id} value={s._id || s.id}>{s.name}</option>
             ))}
           </select>
         );

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { isAuthenticated as checkIsAuthenticated, getAuthenticatedUser, clearAuthData } from "../../utils/authUtils";
 
 import { ToastProvider } from "../../context/ToastContext";
 import {
@@ -50,10 +51,9 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Helper to check permission with Superadmin / Admin role & email bypass
   const hasPermission = (perm: string) => {
-    const userDataStr = localStorage.getItem("wrixty_authenticated_user");
-    if (!userDataStr) return false;
+    const u = getAuthenticatedUser();
+    if (!u) return false;
     try {
-      const u = JSON.parse(userDataStr);
       const roles = u.roles || [];
       const isBypass = roles.some((r: string) => 
         r.toLowerCase() === 'superadmin' || 
@@ -70,17 +70,16 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
   // Initialize theme and auth status
   useEffect(() => {
     // Auth Check
-    const auth = localStorage.getItem("wrixty_authenticated");
+    const auth = checkIsAuthenticated();
     const isPublicPath = pathname === "/login" || pathname === "/" || pathname === "/forgot-password" || pathname === "/reset-password";
     
     if (!auth && !isPublicPath) {
       router.push("/login");
     } else if (auth) {
       setIsAuthenticated(true);
-      const userDataStr = localStorage.getItem("wrixty_authenticated_user");
-      if (userDataStr) {
+      const u = getAuthenticatedUser();
+      if (u) {
         try {
-          const u = JSON.parse(userDataStr);
           setCurrentUser({
             name: u.name || "Admin",
             email: u.email || "superadmin@gmail.com",
@@ -103,9 +102,7 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [pathname, router]);
 
   const handleLogout = () => {
-    localStorage.removeItem("wrixty_authenticated");
-    localStorage.removeItem("wrixty_authenticated_user");
-    localStorage.removeItem("wrixty_token");
+    clearAuthData();
     setIsAuthenticated(false);
     router.push("/login");
   };
@@ -185,7 +182,7 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
               {hasPermission("Restore-lead-list") && renderLink("Restore Lead", "/restore-data", <RestoreFromTrash className="w-4.5 h-4.5" />)}
               {hasPermission("Order-edit") && renderLink("Order", "/order-list", <ShoppingCart className="w-4.5 h-4.5" />)}
               {hasPermission("Activity-log") && renderLink("Activity Log", "/activity-log", <History className="w-4.5 h-4.5" />)}
-              {hasPermission("Lead-try") && renderLink("Lead-try", "/task-list", <Description className="w-4.5 h-4.5" />)}
+              {hasPermission("Lead-try") && renderLink("Lead Try", "/task-list", <Description className="w-4.5 h-4.5" />)}
               {hasPermission("Reminder-list") && renderLink("Reminder List", "/reminder-list", <Notifications className="w-4.5 h-4.5" />)}
               {hasPermission("Return-order-list") && renderLink("Return Order", "/return-order", <AssignmentReturn className="w-4.5 h-4.5" />)}
               {hasPermission("Currier-list") && renderLink("Courier", "/currier-list", <LocalShipping className="w-4.5 h-4.5" />)}

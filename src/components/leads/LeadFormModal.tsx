@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Modal } from "../common/Modal";
 import { Input } from "../common/Input";
 import { Select } from "../common/Select";
+import { getAuthenticatedUser } from "../../utils/authUtils";
 import { Button } from "../common/Button";
 import { FiEdit, FiTrash2 } from "react-icons/fi";
-import { createLeadApi, updateLeadApi, fetchLeadById } from "../../services/leadService";
+import { createLeadApi, updateLeadApi, fetchLeadById, fetchLatestLeadByPhone } from "../../services/leadService";
 import { createOrderApi } from "../../services/orderService";
 import { fetchCouriers } from "../../services/courierService";
 import { useToast } from "../../context/ToastContext";
@@ -62,6 +63,7 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({
   const [customers, setCustomers] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(true);
+  const [isRepeatMode, setIsRepeatMode] = useState(false);
 
   useEffect(() => {
     fetchCouriers({ limit: 100, page: 1 }).then(res => {
@@ -74,13 +76,10 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({
       });
     });
 
-    const userStr = localStorage.getItem("wrixty_authenticated_user");
-    if (userStr) {
-      try {
-        const parsed = JSON.parse(userStr);
-        setCurrentUser(parsed);
-        setIsAdmin(parsed?.roles?.some((r: string) => r.toLowerCase().includes('admin') || r.toLowerCase() === 'superadmin') || parsed?.email === 'superadmin@gmail.com');
-      } catch(e) {}
+    const parsed = getAuthenticatedUser();
+    if (parsed) {
+      setCurrentUser(parsed);
+      setIsAdmin(parsed?.roles?.some((r: string) => r.toLowerCase().includes('admin') || r.toLowerCase() === 'superadmin') || parsed?.email === 'superadmin@gmail.com');
     }
   }, []);
 
@@ -100,7 +99,7 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({
           setReminder(fetchedData.reminderDate || fetchedData.reminder || "");
           const isOrder = Boolean(fetchedData.orderStatus) && fetchedData.orderStatus !== "false";
           setOrderStatus(isOrder);
-          
+
           if (isOrder) {
             setPaymentType(fetchedData.paymentType || "COD");
             setSelectedCourier(fetchedData.courier || "");
@@ -137,7 +136,8 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({
         setSelectedCourier("");
         setTransactionId("");
         setModalSelectedProducts([]);
-        
+        setIsRepeatMode(false);
+
         // Handle Default Assignee
         if (currentUser) {
           if (!isAdmin) {
@@ -153,6 +153,40 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({
       setCurrentSelectedProductId(products[0]?._id || products[0]?.id || "");
     }
   }, [isOpen, activeLead, users, products, statusesOptions, reasonCallOptions, currentUser]);
+
+  // Auto-fill logic when phone number reaches 10 digits
+  useEffect(() => {
+    if (isOpen && !activeLead && phone && phone.length === 10) {
+      const checkPreviousLead = async () => {
+        try {
+          const prevLead = await fetchLatestLeadByPhone(phone);
+          if (prevLead) {
+            setName(prevLead.name || "");
+            setStatus(prevLead.status?._id || prevLead.status || "");
+            setStatusTwo(prevLead.reason_call?._id || prevLead.reason_call || "");
+            setNoteText(prevLead.note || "");
+            setAssignee(prevLead.assgin?._id || prevLead.assgin || "");
+            setOrderStatus(Boolean(prevLead.orderStatus));
+            
+            if (prevLead.products && prevLead.products.length > 0) {
+              setModalSelectedProducts(prevLead.products.map((p: any) => ({
+                productId: p.productId?._id || p.productId,
+                name: p.productId?.name || p.name || "",
+                amount: p.amount || 0,
+                quantity: p.quantity || 1,
+                subtotal: p.subtotal || 0
+              })));
+            }
+            setIsRepeatMode(true);
+            toast.success("Previous lead found. Form auto-filled and set to repeat mode.");
+          }
+        } catch (error) {
+          setIsRepeatMode(false);
+        }
+      };
+      checkPreviousLead();
+    }
+  }, [phone, isOpen, activeLead]);
 
   const handleAddProduct = () => {
     if (!currentSelectedProductId) return;
@@ -170,12 +204,12 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({
     } else {
       setModalSelectedProducts([
         ...modalSelectedProducts,
-        { 
-          productId: prod._id || prod.id, 
-          name: prod.name, 
-          amount: prod.amount, 
-          quantity: 1, 
-          subtotal: prod.amount 
+        {
+          productId: prod._id || prod.id,
+          name: prod.name,
+          amount: prod.amount,
+          quantity: 1,
+          subtotal: prod.amount
         }
       ]);
       toast.success("Product added!");
@@ -235,7 +269,8 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({
       orderStatus: orderStatus,
       paymentType: orderStatus ? paymentType : undefined,
       courier: orderStatus ? selectedCourier : undefined,
-      transactionId: orderStatus ? transactionId : undefined
+      transactionId: orderStatus ? transactionId : undefined,
+      isRepeat: isRepeatMode
     };
 
     try {
@@ -245,7 +280,7 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({
       } else {
         const createdLead = await createLeadApi(leadPayload);
         toast.success(`Lead created successfully!`);
-        
+
         if (orderStatus) {
           try {
             await createOrderApi({
@@ -279,12 +314,12 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title={activeLead ? "Edit Lead Details" : "Add New Lead"} isLoading={isLoading} sizeClass="max-w-6xl">
       <form onSubmit={handleSubmit} className="space-y-5 text-left max-w-5xl mx-auto pr-1">
         <p className="text-xs text-text-secondary font-medium">Fill out the details to {activeLead ? 'update the' : 'register a new'} lead in the system.</p>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <Select 
-              label="Name" 
-              value={name} 
+            <Select
+              label="Name"
+              value={name}
               onChange={(e) => {
                 const selVal = e.target.value;
                 setName(selVal);
@@ -296,25 +331,25 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({
                 } else {
                   setPhone("");
                 }
-              }} 
+              }}
               required
               allowCustom={true}
               options={customers.map(c => ({ value: c.name, label: c.name }))}
             />
           </div>
           <div>
-            <Input 
-              label="Phone Number" 
-              type="text" 
-              value={phone} 
+            <Input
+              label="Phone Number"
+              type="text"
+              value={phone}
               onChange={(e) => {
                 const val = e.target.value.replace(/\D/g, "");
                 if (val.length <= 10) {
                   setPhone(val);
                 }
-              }} 
-              required 
-              placeholder="Enter 10-digit Phone Number" 
+              }}
+              required
+              placeholder="Enter 10-digit Phone Number"
             />
           </div>
           <Select

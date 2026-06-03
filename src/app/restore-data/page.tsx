@@ -1,68 +1,101 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Table, Column } from "../../components/common/Table";
-import { Restore } from "@mui/icons-material";
 import { usePermission } from "../../utils/permissionUtils";
+import { fetchLeads, Lead as BackendLead } from "../../services/leadService";
+import { useToast } from "../../context/ToastContext";
 
-export interface Lead {
+export interface DeletedLead {
   id: string;
   name: string;
   phone_number: string;
   product: string;
-  amount: number;
-  quantity: number;
   subtotal: number;
-  assgin: string;
   date: string;
-  time?: string;
   status: string;
-  status_two?: string;
-  reason_call?: string;
-  note: string;
-  isDeleted?: boolean;
-  deleteDate?: string;
-  reminderDate?: string;
+  reason_call: string;
+  deleteDate: string;
 }
 
 export default function RestoreDataPage() {
   const { hasPermission } = usePermission();
-  const [leads, setLeads] = React.useState<Lead[]>([
-    { id: "1", name: "Rajesh Kumar", phone_number: "9988776655", product: "Wrixty Ashwagandha Gold", amount: 1200, quantity: 2, subtotal: 2400, assgin: "Aman Sharma", date: "2026-05-29", time: "10:30", status: "New", note: "Interested in stress relief products.", isDeleted: true, deleteDate: "2026-05-30" }
-  ]);
+  const toast = useToast();
 
-  const restoreLead = (id: string) => {
-    setLeads(prev => prev.map(l => l.id === id ? { ...l, isDeleted: false } : l));
+  const [leads, setLeads] = useState<DeletedLead[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState("");
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetchLeads({
+        isDeleted: true,
+        page,
+        limit,
+        search
+      });
+      const mapped = res.data.map(l => {
+        const formatDateTime = (dateStr?: string) => {
+          if (!dateStr) return "N/A";
+          const d = new Date(dateStr);
+          const day = String(d.getDate()).padStart(2, '0');
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const year = d.getFullYear();
+          let hr = d.getHours();
+          const ampm = hr >= 12 ? 'pm' : 'am';
+          hr = hr % 12;
+          hr = hr ? hr : 12;
+          const min = String(d.getMinutes()).padStart(2, '0');
+          return `${day}/${month}/${year} ${String(hr).padStart(2, '0')}:${min} ${ampm}`;
+        };
+
+        const prodName = l.products?.length 
+          ? l.products.map((p: any) => p.name || (p.productId?.name)).join(" , ") 
+          : l.product || "-";
+        
+        const totalAmount = l.products?.length
+          ? l.products.reduce((acc: number, p: any) => acc + (p.subtotal || (p.amount * (p.quantity || 1)) || 0), 0)
+          : l.subtotal || l.amount || 0;
+
+        return {
+          id: l._id || "",
+          name: l.name || "",
+          phone_number: l.phone_number || "",
+          product: prodName,
+          subtotal: totalAmount,
+          date: formatDateTime(l.createdAt),
+          status: l.status?.name || l.status || "Open",
+          reason_call: l.reason_call?.name || l.reason_call || "",
+          deleteDate: formatDateTime(l.deleteDate || l.updatedAt)
+        };
+      });
+      setLeads(mapped);
+      setTotal(res.total);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to load deleted leads");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const deletedLeads = React.useMemo(() => leads.filter(l => l.isDeleted), [leads]);
+  useEffect(() => {
+    loadData();
+  }, [page, limit, search]);
 
-  const columns: Column<Lead>[] = [
-    { key: "id", header: "No", render: (_, __, i) => i + 1, sortable: false },
-    { key: "name", header: "Customer Name" },
+  const columns: Column<DeletedLead>[] = [
+    { key: "name", header: "Customer Name", render: (val) => val || "-" },
     { key: "phone_number", header: "Phone Number" },
     { key: "product", header: "Product Name" },
-    { key: "subtotal", header: "Total", render: (val) => `₹${val}` },
-    { key: "date", header: "Lead Date" },
-    { key: "deleteDate", header: "Delete Date" },
+    { key: "subtotal", header: "Total" },
+    { key: "date", header: "Date" },
+    { key: "status", header: "Status" },
     { key: "reason_call", header: "Reason Call", render: (val) => val || "-" },
-    {
-      key: "actions",
-      header: "Action",
-      sortable: false,
-      render: (_, row) => (
-        <>
-          {hasPermission("Restore-lead-action") && (
-            <button
-              onClick={() => restoreLead(row.id)}
-              className="flex items-center gap-1 py-1 px-2.5 bg-primary-teal/10 border border-primary-teal/20 hover:bg-primary-teal hover:text-white text-[10px] font-extrabold uppercase tracking-wider text-primary-teal rounded-lg transition-all"
-            >
-              <Restore className="w-3.5 h-3.5" /> Restore
-            </button>
-          )}
-        </>
-      )
-    }
+    { key: "deleteDate", header: "Delete Date" }
   ];
 
   return (
@@ -73,11 +106,27 @@ export default function RestoreDataPage() {
           Restore Deleted Data
         </h2>
         <p className="text-xs text-zinc-500  font-semibold uppercase tracking-wider">
-          Inspect and restore soft-deleted leads
+          Inspect soft-deleted leads
         </p>
       </div>
 
-      <Table data={deletedLeads} columns={columns} />
+      <div className="bg-card-bg border border-border-ui rounded-lg shadow-soft">
+        <Table 
+          data={leads} 
+          columns={columns} 
+          selectable={false}
+          searchable={true}
+          searchPlaceholder="Search..."
+          isLoading={isLoading}
+          serverSide={true}
+          totalCount={total}
+          currentPage={page}
+          rowsPerPage={limit}
+          onPageChange={(p, l) => { setPage(p); setLimit(l); }}
+          onSearchChange={(s) => { setSearch(s); setPage(1); }}
+          idField="id"
+        />
+      </div>
     </div>
   );
 }

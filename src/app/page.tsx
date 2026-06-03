@@ -2,13 +2,13 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { isAuthenticated } from "../utils/authUtils";
 
 export default function EntryPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const auth = localStorage.getItem("wrixty_authenticated");
-    if (auth) {
+    if (isAuthenticated()) {
       router.push("/dashboard");
     } else {
       router.push("/login");

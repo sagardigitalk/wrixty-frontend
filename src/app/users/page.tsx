@@ -20,6 +20,7 @@ import {
 } from "../../services/userService";
 import { fetchRoles, Role as BackendRole } from "../../services/roleService";
 import { usePermission } from "../../utils/permissionUtils";
+import { setAuthData } from "../../utils/authUtils";
 
 export default function UsersPage() {
   const router = useRouter();
@@ -262,24 +263,22 @@ export default function UsersPage() {
           permissions = { ...permissions, ...foundRole.permissions };
         }
       });
-      localStorage.setItem("wrixty_authenticated", "true");
-      localStorage.setItem("wrixty_authenticated_user", JSON.stringify({
+      setAuthData({
         name: user.name,
         email: user.email,
         roles: user.roles,
         permissions: permissions
-      }));
+      });
       toast.success(`Logged in as ${user.name}`);
       window.location.href = "/dashboard";
     } catch (err) {
       console.error("Login-as permissions load failed:", err);
-      localStorage.setItem("wrixty_authenticated", "true");
-      localStorage.setItem("wrixty_authenticated_user", JSON.stringify({
+      setAuthData({
         name: user.name,
         email: user.email,
         roles: user.roles,
         permissions: {}
-      }));
+      });
       toast.success(`Logged in as ${user.name}`);
       window.location.href = "/dashboard";
     }

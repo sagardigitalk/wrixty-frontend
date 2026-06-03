@@ -14,6 +14,7 @@ export interface Lead {
   note?: string;
   reminder?: string;
   orderStatus?: boolean;
+  isRepeat?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -38,6 +39,8 @@ export interface FetchParams {
   endDate?: string;
   reminderStartDate?: string;
   reminderEndDate?: string;
+  isRepeat?: boolean;
+  isDeleted?: boolean;
 }
 
 // GET /api/leads
@@ -49,6 +52,12 @@ export const fetchLeads = async (params?: FetchParams): Promise<PaginatedRespons
 // GET /api/leads/:id
 export const fetchLeadById = async (id: string): Promise<Lead> => {
   const { data } = await apiGetById(endPointApi.leads, id);
+  return data;
+};
+
+// GET /api/leads/latest/:phone
+export const fetchLatestLeadByPhone = async (phone: string): Promise<Lead> => {
+  const { data } = await api.get(`${endPointApi.leads}/latest/${phone}`);
   return data;
 };
 

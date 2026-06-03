@@ -6,6 +6,7 @@ import { Input } from "../../components/common/Input";
 import { Button } from "../../components/common/Button";
 import { loginUser } from "../../services/authService";
 import { useToast } from "../../context/ToastContext";
+import { isAuthenticated } from "../../utils/authUtils";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,8 +16,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const auth = localStorage.getItem("wrixty_authenticated");
-    if (auth) {
+    if (isAuthenticated()) {
       router.push("/dashboard");
     }
   }, [router]);

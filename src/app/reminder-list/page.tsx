@@ -6,6 +6,7 @@ import { Table, Column } from "../../components/common/Table";
 import { FiTrash2 } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
 import { Button } from "../../components/common/Button";
+import { getAuthenticatedUser } from "../../utils/authUtils";
 import { usePermission } from "../../utils/permissionUtils";
 import { fetchLeads, deleteLeadApi } from "../../services/leadService";
 import { DateRangePicker } from "../../components/common/DateRangePicker";
@@ -85,18 +86,15 @@ export default function ReminderListPage() {
   };
 
   React.useEffect(() => {
-    const userStr = localStorage.getItem("wrixty_authenticated_user");
+    const user = getAuthenticatedUser();
     let initialAssigneeFilter = undefined;
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        setCurrentUser(user);
-        const admin = user?.roles?.some((r: string) => r.toLowerCase().includes('admin'));
-        setIsAdmin(admin);
-        if (!admin) {
-          initialAssigneeFilter = user._id || user.id;
-        }
-      } catch(e) {}
+    if (user) {
+      setCurrentUser(user);
+      const admin = user?.roles?.some((r: string) => r.toLowerCase().includes('admin'));
+      setIsAdmin(admin);
+      if (!admin) {
+        initialAssigneeFilter = user._id || user.id;
+      }
     }
     loadRemindersData(initialAssigneeFilter);
   }, []);

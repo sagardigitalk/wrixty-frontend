@@ -1,14 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
-import { CalendarToday } from "@mui/icons-material";
+import React, { useState, useEffect } from "react";
 import { Table, Column } from "../../components/common/Table";
 import { FiTrash2 } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
-import { Button } from "../../components/common/Button";
 import { DateRangePicker } from "../../components/common/DateRangePicker";
+import { fetchLeads, deleteLeadApi, Lead } from "../../services/leadService";
 
-export interface Task {
+export interface TaskRow {
   id: string;
   date: string;
   assginUser: string;
@@ -16,14 +15,15 @@ export interface Task {
   phone_number: string;
   addedBy: string;
   message: string;
-  status: "Pending" | "Completed";
 }
 
-export default function TaskListPage() {
-  const [tasks, setTasks] = useState<Task[]>([
-    { id: "1", date: "2026-05-30", assginUser: "Aman Sharma", lead: "Rajesh Kumar", phone_number: "9988776655", addedBy: "Super Admin", message: "Call regarding bulk order requirements", status: "Pending" },
-    { id: "2", date: "2026-05-29", assginUser: "Priya Patel", lead: "Suresh Gupta", phone_number: "8877665544", addedBy: "Super Admin", message: "Confirm delivery details", status: "Completed" }
-  ]);
+export default function LeadTryPage() {
+  const [tasks, setTasks] = useState<TaskRow[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState("");
   
   const getTodayString = () => {
     const d = new Date();
@@ -34,39 +34,78 @@ export default function TaskListPage() {
   const [endDate, setEndDate] = useState<string | null>(getTodayString());
   const toast = useToast();
 
-  const deleteTask = (id: string) => {
-    setTasks(prev => prev.filter(t => t.id !== id));
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetchLeads({
+        isRepeat: true,
+        page,
+        limit,
+        search,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined
+      });
+      const mapped = res.data.map(l => {
+        let dateStr = "N/A";
+        if (l.createdAt) {
+          const d = new Date(l.createdAt);
+          const day = String(d.getDate()).padStart(2, '0');
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const year = d.getFullYear();
+          let hr = d.getHours();
+          const ampm = hr >= 12 ? 'pm' : 'am';
+          hr = hr % 12;
+          hr = hr ? hr : 12;
+          const min = String(d.getMinutes()).padStart(2, '0');
+          dateStr = `${day}/${month}/${year} ${String(hr).padStart(2, '0')}:${min} ${ampm}`;
+        }
+        
+        let leadName = "N/A";
+        if (l.name) leadName = l.name;
+        
+        const assignUser = (l.assgin as any)?.name || l.assgin || "N/A";
+
+        return {
+          id: l._id || "",
+          date: dateStr,
+          assginUser: assignUser,
+          lead: leadName,
+          phone_number: l.phone_number || "N/A",
+          addedBy: "Admin", // Placeholder or get from activity log
+          message: "This lead order has been successfully repeated"
+        };
+      });
+      setTasks(mapped);
+      setTotal(res.total);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to load Lead Try data");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  useEffect(() => {
+    loadData();
+  }, [page, limit, search, startDate, endDate]);
 
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
     setIsDeleting(id);
-    await new Promise(res => setTimeout(res, 500));
-    deleteTask(id);
-    toast.warning("Record deleted successfully.");
-    setIsDeleting(null);
+    try {
+      await deleteLeadApi(id);
+      toast.warning("Record deleted successfully.");
+      loadData();
+    } catch (err) {
+      toast.error("Failed to delete record");
+    } finally {
+      setIsDeleting(null);
+    }
   };
 
-  const filteredTasks = React.useMemo(() => {
-    if (!startDate && !endDate) return tasks;
-    return tasks.filter(t => {
-      const taskDate = new Date(t.date);
-      let isValid = true;
-      if (startDate) {
-        const start = new Date(startDate);
-        if (taskDate < start) isValid = false;
-      }
-      if (endDate) {
-        const end = new Date(endDate);
-        if (taskDate > end) isValid = false;
-      }
-      return isValid;
-    });
-  }, [tasks, startDate, endDate]);
-
-  const columns: Column<Task>[] = [
-    { key: "date", header: "Date", render: (val) => `${val} 09:55 am` },
+  const columns: Column<TaskRow>[] = [
+    { key: "date", header: "Date" },
     { key: "assginUser", header: "Assign User" },
     { key: "lead", header: "Lead", render: (val) => val || "N/A" },
     { key: "phone_number", header: "Phone Number" },
@@ -98,7 +137,6 @@ export default function TaskListPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-6">
-        
         {/* Date Range Top Right */}
         <div className="flex items-center justify-end pb-6">
           <DateRangePicker 
@@ -107,12 +145,29 @@ export default function TaskListPage() {
             onChange={(start, end) => {
               setStartDate(start);
               setEndDate(end);
+              setPage(1);
             }} 
           />
         </div>
 
         {/* Table Element */}
-        <Table data={filteredTasks} columns={columns} selectable={false} />
+        <div className="bg-card-bg p-8 border border-border-ui rounded-lg shadow-soft">
+          <Table 
+            data={tasks} 
+            columns={columns} 
+            selectable={false}
+            searchable={true}
+            searchPlaceholder="Search..."
+            isLoading={isLoading}
+            serverSide={true}
+            totalCount={total}
+            currentPage={page}
+            rowsPerPage={limit}
+            onPageChange={(p, l) => { setPage(p); setLimit(l); }}
+            onSearchChange={(s) => { setSearch(s); setPage(1); }}
+            idField="id"
+          />
+        </div>
       </div>
     </div>
   );

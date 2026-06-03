@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "../../context/ToastContext";
+import { getAuthenticatedUser } from "../../utils/authUtils";
 import { Input } from "../../components/common/Input";
 import { Select } from "../../components/common/Select";
 import { Button } from "../../components/common/Button";
@@ -39,16 +40,12 @@ export default function AddLeadPage() {
   const [isAdmin, setIsAdmin] = useState(true);
 
   React.useEffect(() => {
-    const userStr = localStorage.getItem("wrixty_authenticated_user");
-    let loggedInUser: any = null;
+    const loggedInUser = getAuthenticatedUser();
     let isUserAdmin = true;
-    if (userStr) {
-      try {
-        loggedInUser = JSON.parse(userStr);
-        setCurrentUser(loggedInUser);
-        isUserAdmin = loggedInUser?.roles?.some((r: string) => r.toLowerCase().includes('admin')) || loggedInUser?.email === 'superadmin@gmail.com';
-        setIsAdmin(isUserAdmin);
-      } catch(e) {}
+    if (loggedInUser) {
+      setCurrentUser(loggedInUser);
+      isUserAdmin = loggedInUser?.roles?.some((r: string) => r.toLowerCase().includes('admin')) || loggedInUser?.email === 'superadmin@gmail.com';
+      setIsAdmin(isUserAdmin);
     }
 
     const loadMasterData = async () => {

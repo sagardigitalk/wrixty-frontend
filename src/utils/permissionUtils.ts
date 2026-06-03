@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getAuthenticatedUser } from "./authUtils";
 
 export const usePermission = () => {
   const [permissions, setPermissions] = useState<Record<string, boolean>>({});
@@ -6,18 +7,11 @@ export const usePermission = () => {
   const [email, setEmail] = useState<string>("");
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const userDataStr = localStorage.getItem("wrixty_authenticated_user");
-      if (userDataStr) {
-        try {
-          const u = JSON.parse(userDataStr);
-          setPermissions(u.permissions || {});
-          setRoles(u.roles || []);
-          setEmail(u.email || "");
-        } catch (e) {
-          console.error("Failed to parse user data", e);
-        }
-      }
+    const u = getAuthenticatedUser();
+    if (u) {
+      setPermissions(u.permissions || {});
+      setRoles(u.roles || []);
+      setEmail(u.email || "");
     }
   }, []);
 
