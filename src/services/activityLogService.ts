@@ -20,6 +20,7 @@ export interface FetchActivityLogsParams {
   userId?: string;
   startDate?: string;
   endDate?: string;
+  search?: string;
 }
 
 export interface FetchActivityLogsResponse {

@@ -15,6 +15,7 @@ export default function ActivityLogPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [filterUser, setFilterUser] = useState("all");
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   
   const getTodayString = () => {
     const d = new Date();
@@ -55,18 +56,21 @@ export default function ActivityLogPage() {
     }
   }, [isAdmin]);
 
-  const loadLogs = async (overrideDates?: { start: string | null, end: string | null }) => {
+  const loadLogs = async (overrideParams?: { start?: string | null, end?: string | null, user?: string, search?: string }) => {
     setLoading(true);
     try {
-      const startToUse = overrideDates !== undefined ? overrideDates.start : startDate;
-      const endToUse = overrideDates !== undefined ? overrideDates.end : endDate;
+      const startToUse = overrideParams?.start !== undefined ? overrideParams.start : startDate;
+      const endToUse = overrideParams?.end !== undefined ? overrideParams.end : endDate;
+      const userToUse = overrideParams?.user !== undefined ? overrideParams.user : filterUser;
+      const searchToUse = overrideParams?.search !== undefined ? overrideParams.search : searchQuery;
       
       const params: any = { page: 1, limit: 200 };
-      if (filterUser !== "all") {
-        params.userId = filterUser;
+      if (userToUse !== "all") {
+        params.userId = userToUse;
       }
       if (startToUse) params.startDate = startToUse;
       if (endToUse) params.endDate = endToUse;
+      if (searchToUse) params.search = searchToUse;
       const res = await fetchActivityLogs(params);
       setLogs(res.data);
     } catch (err) {
@@ -76,12 +80,13 @@ export default function ActivityLogPage() {
     }
   };
 
-  // Load logs on mount, when filterUser changes, or when currentUser is loaded
+  // Load logs on mount when currentUser is loaded
   useEffect(() => {
     if (currentUser) {
       loadLogs();
     }
-  }, [currentUser, filterUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
 
   const formattedLogs = React.useMemo(() => {
     return logs.map((log) => {
@@ -125,16 +130,13 @@ export default function ActivityLogPage() {
       <div className="bg-white p-6 border border-border-ui rounded-lg shadow-sm space-y-6">
         
         <div className="flex flex-wrap items-center justify-end gap-3 border-b border-border-ui pb-4">
-          <div className="w-full sm:w-auto min-w-[160px]">
+          <div className="w-full sm:w-auto min-w-40">
             <Select
               value={filterUser}
               onChange={(e) => setFilterUser(e.target.value)}
               options={[
                 { value: "all", label: "Select Assign" },
-                ...users.map(u => ({ value: u.name, label: u.name })),
-                { value: "Dhruvi Dhameliya", label: "Dhruvi Dhameliya" },
-                { value: "Dhara patel", label: "Dhara patel" },
-                { value: "Dipali", label: "Dipali" }
+                ...users.map(u => ({ value: u._id || u.id, label: u.name }))
               ]}
             />
           </div>
@@ -142,7 +144,13 @@ export default function ActivityLogPage() {
           <Button variant="primary" onClick={() => loadLogs()}>
             Apply Filter
           </Button>
-          <Button variant="outline" onClick={() => setFilterUser("all")}>
+          <Button variant="outline" onClick={() => {
+            setFilterUser("all");
+            setStartDate(getTodayString());
+            setEndDate(getTodayString());
+            setSearchQuery("");
+            loadLogs({ user: "all", start: getTodayString(), end: getTodayString(), search: "" });
+          }}>
             Clear Filter
           </Button>
           
@@ -153,17 +161,22 @@ export default function ActivityLogPage() {
               onChange={(start, end) => {
                 setStartDate(start);
                 setEndDate(end);
-                loadLogs({ start, end });
               }} 
             />
           </div>
         </div>
 
-        {loading ? (
-          <div className="text-center py-6 text-zinc-500">Loading activity logs...</div>
-        ) : (
-          <Table data={formattedLogs} columns={columns} selectable={false} />
-        )}
+        <Table 
+          data={formattedLogs} 
+          columns={columns} 
+          selectable={false} 
+          isLoading={loading}
+          searchable={true}
+          onSearchChange={(val) => {
+            setSearchQuery(val);
+            loadLogs({ search: val });
+          }}
+        />
       </div>
     </div>
   );
