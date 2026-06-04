@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { apiGet, endPointApi } from "../../services/api";
 import { Table, Column } from "../../components/common/Table";
 import { Modal } from "../../components/common/Modal";
+import { DateRangePicker } from "../../components/common/DateRangePicker";
 
 // Icons (if needed, but user screenshots show clean numerical cards without huge icons, I will keep it simple)
 
@@ -42,9 +43,9 @@ export default function DashboardPage() {
   const productColumns: Column<any>[] = [
     { key: "name", header: "Product Name" },
     { key: "sellingCount", header: "Selling Count" },
-    { 
-      key: "amount", 
-      header: "Amount", 
+    {
+      key: "amount",
+      header: "Amount",
       render: (v) => Number(v || 0).toFixed(2)
     }
   ];
@@ -60,22 +61,14 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* Top Header with Date Filter */}
       <div className="flex justify-end">
-        <div className="flex items-center gap-2 bg-white border border-border-ui px-4 py-2 rounded-lg text-sm text-text-secondary shadow-sm">
-          <span>📅</span>
-          <input 
-            type="date" 
-            value={startDate} 
-            onChange={(e) => setStartDate(e.target.value)}
-            className="focus:outline-none"
-          />
-          <span>-</span>
-          <input 
-            type="date" 
-            value={endDate} 
-            onChange={(e) => setEndDate(e.target.value)}
-            className="focus:outline-none"
-          />
-        </div>
+        <DateRangePicker 
+          startDate={startDate} 
+          endDate={endDate} 
+          onChange={(start, end) => {
+            setStartDate(start);
+            setEndDate(end);
+          }} 
+        />
       </div>
 
       {/* 6 Top Cards */}
@@ -114,7 +107,7 @@ export default function DashboardPage() {
 
       {/* Tables Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
+
         {/* Left Side: Repart Order Product */}
         <div className="bg-white border border-border-ui rounded-lg shadow-soft p-4">
           <h4 className="text-lg font-bold text-[#1f2f3e] mb-4">Repart Order Product</h4>
@@ -143,8 +136,8 @@ export default function DashboardPage() {
                 </thead>
                 <tbody>
                   {staffReport.map((staff, idx) => (
-                    <tr 
-                      key={idx} 
+                    <tr
+                      key={idx}
                       className="border-b border-border-ui/30 hover:bg-background cursor-pointer transition-colors"
                       onClick={() => setSelectedStaff(staff)}
                     >
@@ -168,7 +161,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Staff Modal */}
-      <Modal isOpen={!!selectedStaff} onClose={() => setSelectedStaff(null)} title={`Order Details (${selectedStaff?.staffName})`} maxWidth="3xl">
+      <Modal isOpen={!!selectedStaff} onClose={() => setSelectedStaff(null)} title={`Order Details (${selectedStaff?.staffName})`} sizeClass="max-w-5xl">
         <div className="p-4 overflow-x-auto">
           <table className="w-full min-w-max text-left border-collapse border border-border-ui">
             <thead>
@@ -190,7 +183,7 @@ export default function DashboardPage() {
                   <td className="px-4 py-3 text-sm text-text-secondary">₹ {p.subtotal}</td>
                 </tr>
               ))}
-              
+
               {/* Total Row */}
               <tr className="bg-background border-t-2 border-border-ui font-bold">
                 <td className="px-4 py-3 text-sm text-text-primary border-r border-border-ui">Total</td>

@@ -192,7 +192,7 @@ export default function ProfileDetailsPage() {
       </div>
 
       {/* Change Password Modal */}
-      <Modal isOpen={passwordModalOpen} onClose={() => setPasswordModalOpen(false)} title="Change Password" maxWidth="sm">
+      <Modal isOpen={passwordModalOpen} onClose={() => setPasswordModalOpen(false)} title="Change Password" sizeClass="max-w-md">
         <form onSubmit={handleChangePassword} className="space-y-5 p-2">
           <Input 
             label="New Password"

@@ -165,7 +165,13 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({
             setStatus(prevLead.status?._id || prevLead.status || "");
             setStatusTwo(prevLead.reason_call?._id || prevLead.reason_call || "");
             setNoteText(prevLead.note || "");
-            setAssignee(prevLead.assgin?._id || prevLead.assgin || "");
+            
+            // Assign Staff logic: Admin can see previous staff, Staff is forced to themselves
+            if (isAdmin) {
+              setAssignee(prevLead.assgin?._id || prevLead.assgin || "");
+            } else {
+              setAssignee(currentUser?._id || currentUser?.id || "");
+            }
             setOrderStatus(Boolean(prevLead.orderStatus));
             
             if (prevLead.products && prevLead.products.length > 0) {
@@ -176,15 +182,47 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({
                 quantity: p.quantity || 1,
                 subtotal: p.subtotal || 0
               })));
+            } else {
+              setModalSelectedProducts([]);
             }
             setIsRepeatMode(true);
             toast.success("Previous lead found. Form auto-filled and set to repeat mode.");
+          } else {
+            // Reset fields for new lead
+            setIsRepeatMode(false);
+            setStatus(statusesOptions[0]?._id || statusesOptions[0]?.id || "");
+            setStatusTwo(reasonCallOptions[0]?._id || reasonCallOptions[0]?.id || "");
+            setNoteText("");
+            setOrderStatus(false);
+            setModalSelectedProducts([]);
+            if (!isAdmin && currentUser) {
+              setAssignee(currentUser?._id || currentUser?.id || "");
+            }
           }
         } catch (error) {
           setIsRepeatMode(false);
+          setStatus(statusesOptions[0]?._id || statusesOptions[0]?.id || "");
+          setStatusTwo(reasonCallOptions[0]?._id || reasonCallOptions[0]?.id || "");
+          setNoteText("");
+          setOrderStatus(false);
+          setModalSelectedProducts([]);
+          if (!isAdmin && currentUser) {
+            setAssignee(currentUser?._id || currentUser?.id || "");
+          }
         }
       };
       checkPreviousLead();
+    } else if (isOpen && !activeLead && phone && phone.length < 10) {
+      // Reset form if phone is incomplete
+      setIsRepeatMode(false);
+      setStatus(statusesOptions[0]?._id || statusesOptions[0]?.id || "");
+      setStatusTwo(reasonCallOptions[0]?._id || reasonCallOptions[0]?.id || "");
+      setNoteText("");
+      setOrderStatus(false);
+      setModalSelectedProducts([]);
+      if (!isAdmin && currentUser) {
+        setAssignee(currentUser?._id || currentUser?.id || "");
+      }
     }
   }, [phone, isOpen, activeLead]);
 
@@ -330,6 +368,16 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({
                   setPhone(safePhone);
                 } else {
                   setPhone("");
+                  // Reset form if customer has no phone
+                  setIsRepeatMode(false);
+                  setStatus(statusesOptions[0]?._id || statusesOptions[0]?.id || "");
+                  setStatusTwo(reasonCallOptions[0]?._id || reasonCallOptions[0]?.id || "");
+                  setNoteText("");
+                  setOrderStatus(false);
+                  setModalSelectedProducts([]);
+                  if (!isAdmin && currentUser) {
+                    setAssignee(currentUser?._id || currentUser?.id || "");
+                  }
                 }
               }}
               required
