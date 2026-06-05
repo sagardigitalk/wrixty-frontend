@@ -163,13 +163,13 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({
           const prevLead = await fetchLatestLeadByPhone(phone);
           if (prevLead) {
             setName(prevLead.name || "");
-            setStatus(prevLead.status?._id || prevLead.status || "");
-            setStatusTwo(prevLead.reason_call?._id || prevLead.reason_call || "");
+            setStatus((prevLead.status as any)?._id || prevLead.status || "");
+            setStatusTwo((prevLead.reason_call as any)?._id || prevLead.reason_call || "");
             setNoteText(prevLead.note || "");
 
             // Assign Staff logic: Admin can see previous staff, Staff is forced to themselves
             if (isAdmin) {
-              setAssignee(prevLead.assgin?._id || prevLead.assgin || "");
+              setAssignee((prevLead.assgin as any)?._id || prevLead.assgin || "");
             } else {
               setAssignee(currentUser?._id || currentUser?.id || "");
             }

@@ -17,7 +17,10 @@ export default function ActivityLogPage() {
   const [filterUser, setFilterUser] = useState("all");
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
+
   const getTodayString = () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -53,15 +56,17 @@ export default function ActivityLogPage() {
     }
   }, [isAdmin]);
 
-  const loadLogs = async (overrideParams?: { start?: string | null, end?: string | null, user?: string, search?: string }) => {
+  const loadLogs = async (overrideParams?: { start?: string | null, end?: string | null, user?: string, search?: string, page?: number, limit?: number }) => {
     setLoading(true);
     try {
       const startToUse = overrideParams?.start !== undefined ? overrideParams.start : startDate;
       const endToUse = overrideParams?.end !== undefined ? overrideParams.end : endDate;
       const userToUse = overrideParams?.user !== undefined ? overrideParams.user : filterUser;
       const searchToUse = overrideParams?.search !== undefined ? overrideParams.search : searchQuery;
-      
-      const params: any = { page: 1, limit: 200 };
+      const pageToUse = overrideParams?.page !== undefined ? overrideParams.page : currentPage;
+      const limitToUse = overrideParams?.limit !== undefined ? overrideParams.limit : rowsPerPage;
+
+      const params: any = { page: pageToUse, limit: limitToUse };
       if (userToUse !== "all") {
         params.userId = userToUse;
       }
@@ -70,6 +75,11 @@ export default function ActivityLogPage() {
       if (searchToUse) params.search = searchToUse;
       const res = await fetchActivityLogs(params);
       setLogs(res.data);
+      if (res.total !== undefined) {
+        setTotalRecords(res.total);
+      } else if (res.data) {
+        setTotalRecords(res.data.length);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -123,9 +133,9 @@ export default function ActivityLogPage() {
           Track all lead and order activities across the system
         </p>
       </div>
-    
-      <div className="bg-white p-6 border border-border-ui rounded-lg shadow-sm space-y-6">
-        
+
+      <div className="bg-white p-6  space-y-6">
+
         <div className="flex flex-wrap items-center justify-end gap-3 border-b border-border-ui pb-4">
           <div className="w-full sm:w-auto min-w-40">
             <Select
@@ -137,7 +147,7 @@ export default function ActivityLogPage() {
               ]}
             />
           </div>
-          
+
           <Button variant="primary" onClick={() => loadLogs()}>
             Apply Filter
           </Button>
@@ -146,32 +156,43 @@ export default function ActivityLogPage() {
             setStartDate(getTodayString());
             setEndDate(getTodayString());
             setSearchQuery("");
-            loadLogs({ user: "all", start: getTodayString(), end: getTodayString(), search: "" });
+            setCurrentPage(1);
+            loadLogs({ user: "all", start: getTodayString(), end: getTodayString(), search: "", page: 1 });
           }}>
             Clear Filter
           </Button>
-          
+
           <div className="flex items-center gap-3 ml-2">
-            <DateRangePicker 
-              startDate={startDate} 
-              endDate={endDate} 
+            <DateRangePicker
+              startDate={startDate}
+              endDate={endDate}
               onChange={(start, end) => {
                 setStartDate(start);
                 setEndDate(end);
-              }} 
+              }}
             />
           </div>
         </div>
 
-        <Table 
-          data={formattedLogs} 
-          columns={columns} 
-          selectable={false} 
+        <Table
+          data={formattedLogs}
+          columns={columns}
+          selectable={false}
           isLoading={loading}
           searchable={true}
           onSearchChange={(val) => {
             setSearchQuery(val);
-            loadLogs({ search: val });
+            setCurrentPage(1);
+            loadLogs({ search: val, page: 1 });
+          }}
+          serverSide={true}
+          totalCount={totalRecords}
+          currentPage={currentPage}
+          rowsPerPage={rowsPerPage}
+          onPageChange={(page, limit) => {
+            setCurrentPage(page);
+            setRowsPerPage(limit);
+            loadLogs({ page, limit });
           }}
         />
       </div>

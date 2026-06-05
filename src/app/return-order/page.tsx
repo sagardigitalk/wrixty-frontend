@@ -1,6 +1,6 @@
-  "use client";
+"use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Table, Column } from "../../components/common/Table";
 import { FiEdit, FiTrash2, FiEye } from "react-icons/fi";
 import { useToast } from "../../context/ToastContext";
@@ -15,6 +15,8 @@ import { fetchOrders } from "../../services/orderService";
 import { fetchReturnOrders, createReturnOrderApi, deleteReturnOrderApi, fetchReturnOrderById, updateReturnOrderApi, exportReturnOrders } from "../../services/returnOrderService";
 import { DateRangePicker } from "../../components/common/DateRangePicker";
 import { Close } from "@mui/icons-material";
+import { DeleteConfirmModal } from "../../components/common/DeleteConfirmModal";
+import { formatDateTime } from "../../utils/dateUtils";
 
 export interface ReturnOrder {
   id: string;
@@ -39,11 +41,17 @@ export default function ReturnOrderPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const toast = useToast();
-  
+
   const [isFetchingData, setIsFetchingData] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isExporting, setIsExporting] = useState(false);
-  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [returnOrderToDelete, setReturnOrderToDelete] = useState<ReturnOrder | null>(null);
+
   const getTodayString = () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -55,12 +63,12 @@ export default function ReturnOrderPage() {
   const [orderStartDate, setOrderStartDate] = useState<string | null>(getTodayString());
   const [orderEndDate, setOrderEndDate] = useState<string | null>(getTodayString());
 
-  const [filterAssign, setFilterAssign] = useState("all");
-  const [filterOrder, setFilterOrder] = useState("all");
-  const [filterProduct, setFilterProduct] = useState("all");
+  const [filterAssign, setFilterAssign] = useState<string[]>(["all"]);
+  const [filterType, setFilterType] = useState<string[]>(["all"]);
+  const [filterProduct, setFilterProduct] = useState<string[]>(["all"]);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  const loadReturnOrdersData = async (searchOverride?: string, overrideDates?: { start?: string | null, end?: string | null, orderStart?: string | null, orderEnd?: string | null }) => {
+  const loadReturnOrdersData = async (searchOverride?: string, overrideDates?: { start?: string | null, end?: string | null, orderStart?: string | null, orderEnd?: string | null }, overridePage?: number, overrideLimit?: number) => {
     try {
       setIsFetchingData(true);
       const searchToUse = searchOverride !== undefined ? searchOverride : searchQuery;
@@ -68,12 +76,16 @@ export default function ReturnOrderPage() {
       const endToUse = overrideDates !== undefined ? overrideDates.end : endDate;
       const oStartToUse = overrideDates !== undefined ? overrideDates.orderStart : orderStartDate;
       const oEndToUse = overrideDates !== undefined ? overrideDates.orderEnd : orderEndDate;
-      
+      const pageToUse = overridePage !== undefined ? overridePage : currentPage;
+      const limitToUse = overrideLimit !== undefined ? overrideLimit : rowsPerPage;
+
+      const assigneeFilter = filterAssign.includes("all") ? undefined : filterAssign.join(',');
       const res = await fetchReturnOrders({
-        page: 1, limit: 100,
+        page: pageToUse, limit: limitToUse,
         search: searchToUse || undefined,
-        assginTo: filterAssign !== "all" ? filterAssign : undefined,
-        product: filterProduct !== "all" ? filterProduct : undefined,
+        assginTo: assigneeFilter,
+        product: filterProduct.includes("all") ? undefined : filterProduct.join(','),
+        type: filterType.includes("all") ? undefined : filterType.join(','),
         startDate: startToUse || undefined,
         endDate: endToUse || undefined,
         orderStartDate: oStartToUse || undefined,
@@ -88,20 +100,8 @@ export default function ReturnOrderPage() {
         phone_number: r.phone_number,
         assginTo: r.assginTo?.name || r.assginTo || "",
         assginToId: r.assginTo?._id || r.assginTo?.id || r.assginTo || "",
-        orderDate: r.orderId && r.orderId.createdAt ? (() => {
-          const d = new Date(r.orderId.createdAt);
-          const day = String(d.getDate()).padStart(2, '0');
-          const month = String(d.getMonth() + 1).padStart(2, '0');
-          const year = String(d.getFullYear()).slice(-2);
-          return `${day}/${month}/${year}`;
-        })() : "-",
-        returnDate: r.createdAt ? (() => {
-          const d = new Date(r.createdAt);
-          const day = String(d.getDate()).padStart(2, '0');
-          const month = String(d.getMonth() + 1).padStart(2, '0');
-          const year = String(d.getFullYear()).slice(-2);
-          return `${day}/${month}/${year}`;
-        })() : "",
+        orderDate: r.orderId && r.orderId.createdAt ? formatDateTime(r.orderId.createdAt) : "-",
+        returnDate: r.createdAt ? formatDateTime(r.createdAt) : "",
         product: r.products?.map((p: any) => p.name).join(", ") || "",
         amount: r.amount || 0,
         quantity: r.products?.reduce((acc: number, curr: any) => acc + curr.quantity, 0) || 0,
@@ -110,11 +110,23 @@ export default function ReturnOrderPage() {
         _products: r.products || []
       }));
       setReturnOrders(mapped);
-    } catch(err) { console.error(err); }
+      if (res?.data?.total !== undefined) {
+        setTotalRecords(res.data.total);
+      } else if (res?.total !== undefined) {
+        setTotalRecords(res.total);
+      } else {
+        setTotalRecords(list.length);
+      }
+    } catch (err) { console.error(err); }
     finally { setIsFetchingData(false); }
   }
 
+  const initFetchRef = React.useRef(false);
+
   React.useEffect(() => {
+    if (initFetchRef.current) return;
+    initFetchRef.current = true;
+
     const loadMasterData = async () => {
       try {
         const [usersRes, prodsRes, ordersRes] = await Promise.all([
@@ -136,21 +148,26 @@ export default function ReturnOrderPage() {
     loadReturnOrdersData();
   }, [filterAssign, filterProduct]);
 
-  const deleteReturnOrder = async (id: string) => {
+  const executeDelete = async () => {
+    if (!returnOrderToDelete) return;
     try {
-      await deleteReturnOrderApi(id);
-      setReturnOrders(prev => prev.filter(r => r.id !== id));
+      await deleteReturnOrderApi(returnOrderToDelete.id);
+      setReturnOrders(prev => prev.filter(r => r.id !== returnOrderToDelete!.id));
       toast.warning("Return Order deleted.");
-    } catch(err: any) { toast.error("Failed to delete return order"); }
+      setDeleteOpen(false);
+      setReturnOrderToDelete(null);
+    } catch (err) { toast.error("Failed to delete return order"); }
   };
 
   const handleExport = async () => {
     setIsExporting(true);
     try {
+      const assigneeFilter = filterAssign.includes("all") ? undefined : filterAssign.join(',');
       const blob = await exportReturnOrders({
         search: searchQuery || undefined,
-        assginTo: filterAssign !== "all" ? filterAssign : undefined,
-        product: filterProduct !== "all" ? filterProduct : undefined,
+        assginTo: assigneeFilter,
+        product: filterProduct.includes("all") ? undefined : filterProduct.join(','),
+        type: filterType.includes("all") ? undefined : filterType.join(','),
         startDate: startDate || undefined,
         endDate: endDate || undefined
       });
@@ -183,6 +200,43 @@ export default function ReturnOrderPage() {
   const [currentSelectedProductId, setCurrentSelectedProductId] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
 
+  useEffect(() => {
+    if (addOpen && !activeOrder && phone && phone.length === 10) {
+      const match = orders.find(o => o.phone_number === phone);
+      if (match) {
+        setCustomer(match.name || "");
+        if (match.assginTo) {
+          setAssign(typeof match.assginTo === 'object' ? (match.assginTo._id || match.assginTo.id) : match.assginTo);
+        }
+
+        if (match.products && match.products.length > 0) {
+          setSelectedProducts(match.products.map((p: any) => ({
+            productId: p.productId?._id || p.productId || p._id || p.id,
+            name: p.name || p.productId?.name,
+            amount: p.amount || 0,
+            quantity: p.quantity || 1,
+            subtotal: p.subtotal || ((p.amount || 0) * (p.quantity || 1))
+          })));
+        } else if (match.product) {
+          // Fallback for old orders with string product
+          const prodNames = match.product.split(", ");
+          const matchedProds = products.filter(p => prodNames.includes(p.name));
+          setSelectedProducts(matchedProds.map(p => ({
+            productId: p._id || p.id,
+            name: p.name,
+            amount: p.amount || 0,
+            quantity: 1,
+            subtotal: p.amount || 0
+          })));
+        }
+        toast.success("Order details auto-filled.");
+      }
+    } else if (addOpen && !activeOrder && phone && phone.length < 10 && customer) {
+      // Optionally clear if phone is deleted? 
+      // We'll leave it to allow manual editing.
+    }
+  }, [phone, addOpen, activeOrder, orders, products, toast]);
+
   const handleAddProduct = () => {
     if (!currentSelectedProductId) return;
     const prod = products.find(p => (p._id || p.id) === currentSelectedProductId);
@@ -205,7 +259,7 @@ export default function ReturnOrderPage() {
   const convertTotalAmount = selectedProducts.reduce((sum, item) => sum + item.subtotal, 0);
 
   const handleSubmitReturnOrder = async () => {
-    if(!customer || selectedProducts.length === 0) return toast.error("Please fill customer and add products");
+    if (!customer || selectedProducts.length === 0) return toast.error("Please fill customer and add products");
     if (phone.length !== 10) return toast.error("Phone number must be exactly 10 digits!");
     try {
       const payload = {
@@ -216,27 +270,24 @@ export default function ReturnOrderPage() {
         amount: convertTotalAmount,
         products: selectedProducts
       };
-      
+
       if (activeOrder) {
-         await updateReturnOrderApi(activeOrder.id, payload);
-         toast.success("Return Order updated successfully");
+        await updateReturnOrderApi(activeOrder.id, payload);
+        toast.success("Return Order updated successfully");
       } else {
-         await createReturnOrderApi(payload);
-         toast.success("Return Order created successfully");
+        await createReturnOrderApi(payload);
+        toast.success("Return Order created successfully");
       }
       setAddOpen(false);
       loadReturnOrdersData();
       setCustomer(""); setPhone(""); setSelectedProducts([]);
       setActiveOrder(null);
-    } catch(err: any) { toast.error(activeOrder ? "Failed to update return order" : "Failed to create return order"); }
+    } catch (err: any) { toast.error(activeOrder ? "Failed to update return order" : "Failed to create return order"); }
   };
 
-  const handleDelete = async (id: string) => {
-    setIsDeleting(id);
-    await new Promise(res => setTimeout(res, 500));
-    deleteReturnOrder(id);
-    toast.warning("Return Order deleted.");
-    setIsDeleting(null);
+  const handleDeleteClick = (order: ReturnOrder) => {
+    setReturnOrderToDelete(order);
+    setDeleteOpen(true);
   };
 
   const handleOpenEdit = async (order: ReturnOrder) => {
@@ -259,12 +310,12 @@ export default function ReturnOrderPage() {
           throw err;
         }
       }
-      
+
       setCustomer(payload.customerName || order.customerName || "");
       setPhone(payload.phone_number || order.phone_number || "");
       setType(payload.type || order.type || "RTO");
       setAssign(payload.assginTo?._id || payload.assginTo?.id || payload.assginTo || "");
-      
+
       if (payload.products && Array.isArray(payload.products)) {
         setSelectedProducts(payload.products.map((p: any) => ({
           productId: p.productId?._id || p.productId || p._id || p.id,
@@ -276,10 +327,10 @@ export default function ReturnOrderPage() {
       } else {
         setSelectedProducts([]);
       }
-      
+
       setActiveOrder(order);
       setAddOpen(true);
-    } catch(err) {
+    } catch (err) {
       toast.error("Failed to fetch order details");
     }
   };
@@ -312,27 +363,27 @@ export default function ReturnOrderPage() {
       sortable: false,
       render: (_, row) => (
         <div className="flex items-center gap-1.5">
-          {hasPermission("Return-order-edit") && (
+          <button
+            onClick={() => {
+              setActiveOrder(row);
+              setViewOpen(true);
+            }}
+            className="p-1.5 bg-blue-500 hover:bg-blue-400 text-white rounded-lg transition-all shadow-sm"
+            title="View Details"
+          >
+            <FiEye className="w-3.5 h-3.5" />
+          </button>
+
+          {hasPermission("Return-order-delete") && (
             <button
-              onClick={() => handleOpenEdit(row)}
-              className="p-1.5 bg-primary-teal hover:bg-primary-teal text-white rounded-lg transition-all shadow-sm"
-              title="Edit Return Order"
+              onClick={() => handleDeleteClick(row)}
+              disabled={isDeleting === row.id}
+              className={`p-1.5 bg-rose-500 hover:bg-rose-400 text-white rounded-lg transition-all shadow-sm ${isDeleting === row.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+              title="Delete Order"
             >
-              <FiEdit className="w-3.5 h-3.5" />
+              <FiTrash2 className="w-3.5 h-3.5" />
             </button>
           )}
-          <button
-            onClick={() => handleDelete(row.id)}
-            disabled={isDeleting === row.id}
-            className="p-1.5 bg-rose-500 hover:bg-rose-400 text-white rounded-lg transition-all shadow-sm disabled:opacity-50"
-            title="Delete Return Order"
-          >
-            {isDeleting === row.id ? (
-              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <FiTrash2 className="w-3.5 h-3.5" />
-            )}
-          </button>
         </div>
       )
     }
@@ -340,7 +391,7 @@ export default function ReturnOrderPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white  p-6 border border-zinc-200  rounded-lg shadow-sm space-y-6">
+      <div className="bg-white  p-6   space-y-6">
 
         {/* Top Header Row with Dates and Add Button */}
         <div className="flex flex-wrap items-center justify-between border-b border-zinc-100  pb-4 gap-4">
@@ -350,26 +401,26 @@ export default function ReturnOrderPage() {
           <div className="flex items-center gap-6">
             <div className="flex flex-col gap-1">
               <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Order Date :</span>
-              <DateRangePicker 
-                startDate={orderStartDate} 
-                endDate={orderEndDate} 
+              <DateRangePicker
+                startDate={orderStartDate}
+                endDate={orderEndDate}
                 onChange={(start, end) => {
                   setOrderStartDate(start);
                   setOrderEndDate(end);
                   loadReturnOrdersData(undefined, { start: startDate, end: endDate, orderStart: start, orderEnd: end });
-                }} 
+                }}
               />
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Return Order Date :</span>
-              <DateRangePicker 
-                startDate={startDate} 
-                endDate={endDate} 
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
                 onChange={(start, end) => {
                   setStartDate(start);
                   setEndDate(end);
                   loadReturnOrdersData(undefined, { start, end, orderStart: orderStartDate, orderEnd: orderEndDate });
-                }} 
+                }}
               />
             </div>
           </div>
@@ -389,30 +440,36 @@ export default function ReturnOrderPage() {
         <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100  pb-4">
           <div className="w-full sm:w-auto sm:flex-1 min-w-[160px]">
             <Select
+              multiple={true}
               value={filterAssign}
-              onChange={(e) => setFilterAssign(e.target.value)}
+              onChange={(e) => setFilterAssign(e.target.value as unknown as string[])}
               options={[
-                { value: "all", label: "Select Assgin" },
-                ...users.map(u => ({ value: u.name, label: u.name }))
+                { value: "all", label: "Select Assign" },
+                ...users.map(u => ({ value: u._id || u.id, label: u.name }))
               ]}
             />
           </div>
           <div className="w-full sm:w-auto sm:flex-1 min-w-[160px]">
             <Select
-              value={filterOrder}
-              onChange={(e) => setFilterOrder(e.target.value)}
+              multiple={true}
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value as unknown as string[])}
               options={[
-                { value: "all", label: "Select Order" }
+                { value: "all", label: "Select Type" },
+                { value: "RTO", label: "RTO" },
+                { value: "Damaged Item", label: "Damaged Item" },
+                { value: "Customer Return", label: "Customer Return" }
               ]}
             />
           </div>
           <div className="w-full sm:w-auto sm:flex-1 min-w-[160px]">
             <Select
+              multiple={true}
               value={filterProduct}
-              onChange={(e) => setFilterProduct(e.target.value)}
+              onChange={(e) => setFilterProduct(e.target.value as unknown as string[])}
               options={[
                 { value: "all", label: "Select Product" },
-                ...products.map(p => ({ value: p.name, label: p.name }))
+                ...products.map(p => ({ value: p._id || p.id, label: p.name }))
               ]}
             />
           </div>
@@ -421,7 +478,7 @@ export default function ReturnOrderPage() {
             <Button variant="secondary" className="bg-teal-800 hover:bg-teal-700" onClick={() => loadReturnOrdersData()}>
               Apply Filter
             </Button>
-            <Button variant="danger" className="bg-rose-500 hover:bg-rose-600" onClick={() => { setFilterAssign("all"); setFilterOrder("all"); setFilterProduct("all"); setSearchQuery(""); loadReturnOrdersData(""); }}>
+            <Button variant="danger" className="bg-rose-500 hover:bg-rose-600" onClick={() => { setFilterAssign(["all"]); setFilterType(["all"]); setFilterProduct(["all"]); setSearchQuery(""); setStartDate(null); setEndDate(null); setOrderStartDate(null); setOrderEndDate(null); setCurrentPage(1); setTimeout(() => loadReturnOrdersData("", { start: null, end: null, orderStart: null, orderEnd: null }, 1, rowsPerPage), 0); }}>
               Clear Filter
             </Button>
             <Button variant="success" onClick={handleExport} isLoading={isExporting}>
@@ -431,17 +488,27 @@ export default function ReturnOrderPage() {
         </div>
 
         {/* Table Element */}
-        <Table 
-    data={filteredOrders} 
-    columns={columns} 
-    selectable={false} 
-    isLoading={isFetchingData}
-    searchable={true}
-    onSearchChange={(val) => {
-      setSearchQuery(val);
-      loadReturnOrdersData(val);
-    }}
-  />
+        <Table
+          data={filteredOrders}
+          columns={columns}
+          selectable={false}
+          isLoading={isFetchingData}
+          searchable={true}
+          onSearchChange={(val) => {
+            setSearchQuery(val);
+            setCurrentPage(1);
+            loadReturnOrdersData(val, undefined, 1, rowsPerPage);
+          }}
+          serverSide={true}
+          totalCount={totalRecords}
+          currentPage={currentPage}
+          rowsPerPage={rowsPerPage}
+          onPageChange={(page, limit) => {
+            setCurrentPage(page);
+            setRowsPerPage(limit);
+            loadReturnOrdersData(undefined, undefined, page, limit);
+          }}
+        />
       </div>
 
       {/* Add/Edit Return Order Modal */}
@@ -450,51 +517,32 @@ export default function ReturnOrderPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-zinc-500">Customer Name</label>
-              <Select 
-                 options={[{ value: "", label: "Select Customer" }, ...Array.from(new Map(orders.map(o => [o.name, o])).values()).map((o: any) => ({ value: o.name, label: o.name }))]}
-                 value={customer} 
-                 onChange={e => {
-                   setCustomer(e.target.value);
-                   const o = orders.find(ord => ord.name === e.target.value);
-                   if (o) setPhone(o.phone_number);
-                 }} 
+              <Select
+                options={[{ value: "", label: "Select Customer" }, ...Array.from(new Map(orders.map(o => [o.name, o])).values()).map((o: any) => ({ value: o.name, label: o.name }))]}
+                value={customer}
+                onChange={e => {
+                  setCustomer(e.target.value);
+                  const o = orders.find(ord => ord.name === e.target.value);
+                  if (o) setPhone(o.phone_number);
+                }}
               />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-zinc-500">Phone Number</label>
               <Input placeholder="Enter Phone Number" value={phone} onChange={e => setPhone(e.target.value)} />
             </div>
-            
+
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-zinc-500">Type</label>
               <Select options={[{ value: "", label: "Select Type" }, { value: "RTO", label: "RTO" }]} value={type} onChange={e => setType(e.target.value)} />
             </div>
             <div className="space-y-1 md:col-span-1">
               <label className="text-[10px] font-bold text-zinc-500">Assgin to</label>
-              <Select 
+              <Select
                 options={[{ value: "", label: "Select Assignee" }, ...users.map(u => ({ value: u._id || u.id, label: u.name }))]}
-                value={assign} 
-                onChange={e => setAssign(e.target.value)} 
+                value={assign}
+                onChange={e => setAssign(e.target.value)}
               />
-            </div>
-          </div>
-
-          <div className="border-t border-zinc-150 pt-4 space-y-3">
-            <h4 className="text-sm font-bold text-zinc-700">Select Products</h4>
-            <div className="flex gap-2.5 items-end">
-              <div className="flex-1">
-                <Select
-                  value={currentSelectedProductId}
-                  onChange={(e) => setCurrentSelectedProductId(e.target.value)}
-                  options={[
-                    { value: "", label: "Select a Product" },
-                    ...products.map(p => ({ value: p._id || p.id, label: `${p.name} (₹${p.amount})` }))
-                  ]}
-                />
-              </div>
-              <Button type="button" variant="success" className="bg-teal-500 hover:bg-teal-600 border-none px-6 py-2.5" onClick={handleAddProduct}>
-                Add Product
-              </Button>
             </div>
           </div>
 
@@ -508,7 +556,6 @@ export default function ReturnOrderPage() {
                     <th className="p-3 font-semibold">Amount</th>
                     <th className="p-3 font-semibold w-24">Quantity</th>
                     <th className="p-3 font-semibold">Subtotal</th>
-                    <th className="p-3 font-semibold">Action</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white ">
@@ -516,17 +563,12 @@ export default function ReturnOrderPage() {
                     <tr key={row.productId} className="border-b border-zinc-100 ">
                       <td className="p-3">{row.name}</td>
                       <td className="p-3">{row.amount}</td>
-                      <td className="p-3">
-                        <input type="number" min="1" className="w-16 border border-zinc-200 outline-none rounded px-2 py-1" value={row.quantity} onChange={e => handleQtyChange(row.productId, Number(e.target.value))} />
-                      </td>
+                      <td className="p-3">{row.quantity}</td>
                       <td className="p-3">{row.subtotal}</td>
-                      <td className="p-3">
-                         <button onClick={() => handleRemoveProduct(row.productId)} className="p-1.5 bg-rose-500 hover:bg-rose-400 text-white rounded-lg transition-all shadow-sm"><FiTrash2 className="w-3.5 h-3.5" /></button>
-                      </td>
                     </tr>
                   )) : (
                     <tr>
-                       <td colSpan={5} className="p-6 text-center text-zinc-500 font-medium">No products selected</td>
+                      <td colSpan={4} className="p-6 text-center text-zinc-500 font-medium">No products selected</td>
                     </tr>
                   )}
                 </tbody>
@@ -586,6 +628,15 @@ export default function ReturnOrderPage() {
           </div>
         </div>
       </Modal>
+
+      <DeleteConfirmModal
+        isOpen={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={executeDelete}
+        title="Delete Return Order"
+        itemName={returnOrderToDelete?.customerName}
+        itemType="return order"
+      />
     </div>
   );
 }

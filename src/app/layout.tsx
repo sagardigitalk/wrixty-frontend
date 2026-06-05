@@ -3,6 +3,7 @@ import { Inter, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { LayoutWrapper } from "../components/layout/LayoutWrapper";
 import NextTopLoader from "nextjs-toploader";
+import { SettingsProvider } from "../context/SettingsContext";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -44,7 +45,9 @@ export default function RootLayout({
           speed={200}
           shadow="0 0 10px #0F766E,0 0 5px #0F766E"
         />
-        <LayoutWrapper>{children}</LayoutWrapper>
+        <SettingsProvider>
+          <LayoutWrapper>{children}</LayoutWrapper>
+        </SettingsProvider>
       </body>
     </html>
   );

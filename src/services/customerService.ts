@@ -7,9 +7,9 @@ export interface Customer {
   createdAt?: string;
 }
 
-export const fetchCustomers = async (search: string = '') => {
+export const fetchCustomers = async (search: string = '', page: number = 1, limit: number = 10) => {
   try {
-    const { data } = await apiGet('/customers', { search });
+    const { data } = await apiGet('/customers', { search, page, limit });
     return data;
   } catch (error) {
     console.error("Failed to fetch customers", error);

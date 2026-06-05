@@ -14,6 +14,7 @@ import {
   Courier
 } from "../../services/courierService";
 import { usePermission } from "../../utils/permissionUtils";
+import { DeleteConfirmModal } from "../../components/common/DeleteConfirmModal";
 
 export default function CourierListPage() {
   const { hasPermission } = usePermission();
@@ -30,6 +31,10 @@ export default function CourierListPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [activeCourier, setActiveCourier] = useState<Courier | null>(null);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [courierToDelete, setCourierToDelete] = useState<Courier | null>(null);
+
   const [name, setName] = useState("");
   const [formErrors, setFormErrors] = useState<{ name?: string }>({});
 
@@ -95,9 +100,17 @@ export default function CourierListPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteClick = (courier: Courier) => {
+    setCourierToDelete(courier);
+    setDeleteOpen(true);
+  };
+
+  const executeDelete = async () => {
+    if (!courierToDelete) return;
     try {
-      await deleteCourier(id);
+      await deleteCourier(courierToDelete._id);
+      setDeleteOpen(false);
+      setCourierToDelete(null);
       loadCouriers();
     } catch {
       setError("Failed to delete courier.");
@@ -124,7 +137,7 @@ export default function CourierListPage() {
           )}
           {hasPermission("Currier-delete") && (
             <button
-              onClick={() => handleDelete(row._id)}
+              onClick={() => handleDeleteClick(row)}
               className="p-1.5 bg-rose-500 hover:bg-rose-400 text-white rounded-lg transition-all shadow-sm"
               title="Delete"
             >
@@ -220,6 +233,15 @@ export default function CourierListPage() {
           </div>
         </form>
       </Modal>
+
+      <DeleteConfirmModal
+        isOpen={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={executeDelete}
+        title="Delete Courier"
+        itemName={courierToDelete?.name}
+        itemType="courier"
+      />
     </div>
   );
 }

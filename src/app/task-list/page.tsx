@@ -24,7 +24,7 @@ export default function LeadTryPage() {
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
-  
+
   const getTodayString = () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -59,10 +59,10 @@ export default function LeadTryPage() {
           const min = String(d.getMinutes()).padStart(2, '0');
           dateStr = `${day}/${month}/${year} ${String(hr).padStart(2, '0')}:${min} ${ampm}`;
         }
-        
+
         let leadName = "N/A";
         if (l.name) leadName = l.name;
-        
+
         const assignUser = (l.assgin as any)?.name || l.assgin || "N/A";
 
         return {
@@ -139,22 +139,22 @@ export default function LeadTryPage() {
       <div className="space-y-6">
         {/* Date Range Top Right */}
         <div className="flex items-center justify-end pb-6">
-          <DateRangePicker 
-            startDate={startDate} 
-            endDate={endDate} 
+          <DateRangePicker
+            startDate={startDate}
+            endDate={endDate}
             onChange={(start, end) => {
               setStartDate(start);
               setEndDate(end);
               setPage(1);
-            }} 
+            }}
           />
         </div>
 
         {/* Table Element */}
-        <div className="bg-card-bg p-8 border border-border-ui rounded-lg shadow-soft">
-          <Table 
-            data={tasks} 
-            columns={columns} 
+        <div className="bg-card-bg p-8 ">
+          <Table
+            data={tasks}
+            columns={columns}
             selectable={false}
             searchable={true}
             searchPlaceholder="Search..."

@@ -212,17 +212,17 @@ export default function KanbanListPage() {
 
                       {/* Default Visible Content */}
                       <div className="pl-4 space-y-1">
-                        <h5 className="text-[14px] font-bold text-[#1f2f3e] uppercase tracking-wide leading-tight">
+                        <h5 className="text-[14px] font-semibold text-[#1f2f3e] tracking-wide capitalize">
                           {lead.name || lead.assginName || "-"}
                         </h5>
                         <div className="flex flex-col gap-0.5">
                           {lead.assginName && (
-                             <p className="text-[11px] text-text-secondary font-bold uppercase tracking-wider">
+                             <p className="text-[14px] font-semibold text-[#1f2f3e] tracking-wide capitalize">
                               Assigned: {lead.assginName}
                             </p>
                           )}
                           {lead.assginEmail && (
-                            <p className="text-[11px] text-primary-teal font-semibold truncate">
+                            <p className="text-[14px] font-semibold text-[#1f2f3e] tracking-wide">
                               ✉ {lead.assginEmail}
                             </p>
                           )}

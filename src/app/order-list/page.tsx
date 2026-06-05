@@ -13,8 +13,11 @@ import { fetchProducts } from "../../services/productService";
 import { fetchUsers } from "../../services/userService";
 import { fetchOrders, createOrderApi, updateOrderApi, deleteOrderApi, exportOrders } from "../../services/orderService";
 import { usePermission } from "../../utils/permissionUtils";
+import { DeleteConfirmModal } from "../../components/common/DeleteConfirmModal";
+import { getAuthenticatedUser } from "../../utils/authUtils";
 import { fetchCouriers } from "../../services/courierService";
 import { DateRangePicker } from "../../components/common/DateRangePicker";
+import { formatDateTime } from "../../utils/dateUtils";
 
 export interface Order {
   id: string;
@@ -55,6 +58,11 @@ export default function OrderListPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [couriers, setCouriers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
 
   const getTodayString = () => {
     const d = new Date();
@@ -64,20 +72,23 @@ export default function OrderListPage() {
   const [startDate, setStartDate] = useState<string | null>(getTodayString());
   const [endDate, setEndDate] = useState<string | null>(getTodayString());
 
-  const loadOrdersData = async (searchOverride?: string, overrideDates?: { start: string | null, end: string | null }) => {
+  const loadOrdersData = async (overrideSearch?: string, overrideDates?: { start: string | null, end: string | null }, overrideAssignee?: string, overridePage?: number, overrideLimit?: number) => {
     try {
       setIsFetchingData(true);
-      const searchToUse = searchOverride !== undefined ? searchOverride : searchQuery;
+      const assigneeFilter = overrideAssignee === 'all' ? undefined : (overrideAssignee || (filterAssignee.includes('all') ? undefined : filterAssignee.join(',')));
+      const searchToUse = overrideSearch !== undefined ? overrideSearch : searchQuery;
       const startToUse = overrideDates !== undefined ? overrideDates.start : startDate;
       const endToUse = overrideDates !== undefined ? overrideDates.end : endDate;
+      const pageToUse = overridePage !== undefined ? overridePage : currentPage;
+      const limitToUse = overrideLimit !== undefined ? overrideLimit : rowsPerPage;
       
       const ordersRes = await fetchOrders({ 
-        page: 1, 
-        limit: 100,
+        page: pageToUse, 
+        limit: limitToUse,
         search: searchToUse || undefined,
-        product: filterProduct !== 'all' ? filterProduct : undefined,
-        assginTo: filterAssignee !== 'all' ? filterAssignee : undefined,
-        courier: filterCourier !== 'all' ? filterCourier : undefined,
+        product: filterProduct.includes('all') ? undefined : filterProduct.join(','),
+        assginTo: assigneeFilter,
+        courier: filterCourier.includes('all') ? undefined : filterCourier.join(','),
         startDate: startToUse || undefined,
         endDate: endToUse || undefined
       });
@@ -92,13 +103,7 @@ export default function OrderListPage() {
         quantity: o.quantity || 1,
         subtotal: o.amount || 0,
         grandTotal: o.grandTotal || o.subtotal || (o.products?.length ? o.products.reduce((acc: number, p: any) => acc + (p.subtotal || (p.amount * (p.quantity || 1)) || 0), 0) : (o.amount || 0)),
-        date: o.createdAt ? (() => {
-          const d = new Date(o.createdAt);
-          const day = String(d.getDate()).padStart(2, '0');
-          const month = String(d.getMonth() + 1).padStart(2, '0');
-          const year = String(d.getFullYear()).slice(-2);
-          return `${day}/${month}/${year}`;
-        })() : "",
+        date: formatDateTime(o.createdAt || new Date()),
         paymentType: o.paymentType || "COD",
         courier: o.courier || "",
         assginTo: o.assginTo?.name || o.assginTo || "",
@@ -109,6 +114,11 @@ export default function OrderListPage() {
         _products: o.products || []
       }));
       setOrders(mapped);
+      if (ordersRes.total !== undefined) {
+        setTotalRecords(ordersRes.total);
+      } else if (ordersRes.data) {
+        setTotalRecords(ordersRes.data.length);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -116,7 +126,12 @@ export default function OrderListPage() {
     }
   };
 
+  const initFetchRef = React.useRef(false);
+
   React.useEffect(() => {
+    if (initFetchRef.current) return;
+    initFetchRef.current = true;
+
     const loadMasterData = async () => {
       try {
         const [usersRes, prodsRes, couriersRes] = await Promise.all([
@@ -131,19 +146,21 @@ export default function OrderListPage() {
         console.error(err);
       }
     };
-    loadMasterData();
-    loadOrdersData();
-  }, []);
-
-  const deleteOrder = async (id: string) => {
-    try {
-      await deleteOrderApi(id);
-      setOrders(prev => prev.filter(o => o.id !== id));
-      toast.warning("Order deleted.");
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to delete order");
+    const user = getAuthenticatedUser();
+    let initialAssigneeFilter = "all";
+    if (user) {
+      setCurrentUser(user);
+      const admin = user?.roles?.some((r: string) => r.toLowerCase().includes('admin'));
+      setIsAdmin(admin);
+      if (!admin) {
+        initialAssigneeFilter = user._id || user.id;
+        setFilterAssignee([initialAssigneeFilter]);
+      }
     }
-  };
+
+    loadMasterData();
+    loadOrdersData(undefined, undefined, initialAssigneeFilter);
+  }, []);
 
   const updateOrder = async (id: string, updated: Partial<Order>) => {
     try {
@@ -188,40 +205,36 @@ export default function OrderListPage() {
 
   const toast = useToast();
 
-  // Selected Leads for bulk options (if needed, but not in screenshot)
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  // Filters State (matching screenshot 1)
-  const [filterProduct, setFilterProduct] = useState("all");
-  const [filterAssignee, setFilterAssignee] = useState("all");
-  const [filterCourier, setFilterCourier] = useState("all");
+  const [filterProduct, setFilterProduct] = useState<string[]>(["all"]);
+  const [filterAssignee, setFilterAssignee] = useState<string[]>(["all"]);
+  const [filterCourier, setFilterCourier] = useState<string[]>(["all"]);
 
   const [isFetchingData, setIsFetchingData] = useState(false);
 
-  // Modals state
   const [editOpen, setEditOpen] = useState(false);
   const [repeatOpen, setRepeatOpen] = useState(false);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
 
-  // Modal Form States (Shared between Edit and Repeat, though instantiated differently on open)
   const [paymentType, setPaymentType] = useState<"COD" | "Prepaid">("COD");
   const [txnId, setTxnId] = useState("");
   const [courier, setCourier] = useState("");
   
-  // Products within Modal
   const [modalSelectedProducts, setModalSelectedProducts] = useState<SelectedProductRow[]>([]);
   const [modalProductSelect, setModalProductSelect] = useState("");
   
   const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
   const [isRepeatingOrder, setIsRepeatingOrder] = useState(false);
-  const [isDeletingOrder, setIsDeletingOrder] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
 
   const filteredOrders = React.useMemo(() => {
     return orders;
   }, [orders]);
 
-  // Handle adding product to modal table
   const handleAddProduct = () => {
     if (!modalProductSelect) return;
     const prod = products.find(p => (p._id || p.id) === modalProductSelect);
@@ -229,7 +242,6 @@ export default function OrderListPage() {
 
     const existingIdx = modalSelectedProducts.findIndex(p => p.id === (prod._id || prod.id));
     if (existingIdx >= 0) {
-      // Increment quantity if already added
       const updated = [...modalSelectedProducts];
       updated[existingIdx].quantity += 1;
       updated[existingIdx].subtotal = updated[existingIdx].amount * updated[existingIdx].quantity;
@@ -262,14 +274,12 @@ export default function OrderListPage() {
 
   const totalAmount = modalSelectedProducts.reduce((sum, p) => sum + p.amount * p.quantity, 0);
 
-  // --- EDIT ORDER LOGIC ---
   const openEdit = (order: any) => {
     setActiveOrder(order);
     setPaymentType(order.paymentType === "Prepaid" ? "Prepaid" : "COD");
     setTxnId(order.transactionId || "");
     setCourier(order.courier || "");
     
-    // Use structured products array if available from backend
     const rawProducts: any[] = order._products || [];
     if (rawProducts.length > 0) {
       setModalSelectedProducts(rawProducts.map((p: any) => ({
@@ -281,7 +291,6 @@ export default function OrderListPage() {
         subtotal: p.subtotal || ((p.productId?.amount || p.amount || 0) * (p.quantity || 1))
       })));
     } else {
-      // Fallback: parse from product name string
       const existingProds = products.filter(p => order.product.includes(p.name));
       setModalSelectedProducts(existingProds.map(p => ({
         id: p._id || p.id,
@@ -330,13 +339,11 @@ export default function OrderListPage() {
       toast.success(`Order details updated successfully.`);
       setEditOpen(false);
     } catch (_) {
-      // error toast shown inside updateOrder
     } finally {
       setIsUpdatingOrder(false);
     }
   };
 
-  // --- REPEAT ORDER LOGIC ---
   const openRepeat = (order: Order) => {
     setActiveOrder(order);
     setPaymentType(order.paymentType === "Prepaid" ? "Prepaid" : "COD");
@@ -414,27 +421,38 @@ export default function OrderListPage() {
       toast.success(`Repeat Order created for ${activeOrder.name}!`);
       setRepeatOpen(false);
     } catch (_) {
-      // error shown in addOrder
     } finally {
       setIsRepeatingOrder(false);
     }
   };
 
-  // --- DELETE LOGIC ---
-  const handleDelete = async (id: string) => {
-    setIsDeletingOrder(true);
-    await deleteOrder(id);
-    setIsDeletingOrder(false);
+  const handleDeleteClick = (order: Order) => {
+    setOrderToDelete(order);
+    setDeleteOpen(true);
+  };
+
+  const executeDelete = async () => {
+    if (!orderToDelete) return;
+    try {
+      await deleteOrderApi(orderToDelete.id);
+      setOrders(prev => prev.filter(o => o.id !== orderToDelete.id));
+      toast.warning("Order deleted.");
+      setDeleteOpen(false);
+      setOrderToDelete(null);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to delete order");
+    }
   };
 
   const handleExport = async () => {
     setIsExporting(true);
     try {
+      const assigneeFilter = filterAssignee.includes('all') ? undefined : filterAssignee.join(',');
       const blob = await exportOrders({
         search: searchQuery || undefined,
-        product: filterProduct !== 'all' ? filterProduct : undefined,
-        assginTo: filterAssignee !== 'all' ? filterAssignee : undefined,
-        courier: filterCourier !== 'all' ? filterCourier : undefined,
+        product: filterProduct.includes('all') ? undefined : filterProduct.join(','),
+        assginTo: assigneeFilter,
+        courier: filterCourier.includes('all') ? undefined : filterCourier.join(','),
         startDate: startDate || undefined,
         endDate: endDate || undefined
       });
@@ -475,7 +493,7 @@ export default function OrderListPage() {
           {hasPermission("Order-edit") && (
             <button
               onClick={() => openEdit(row)}
-              className="p-1.5 bg-primary-teal hover:bg-primary-teal text-white rounded-lg transition-all shadow-sm"
+              className="p-1.5 bg-primary-teal hover:bg-primary-teal/90 text-white rounded-lg transition-all shadow-sm"
               title="Edit Order"
             >
               <FiEdit className="w-3.5 h-3.5" />
@@ -483,9 +501,9 @@ export default function OrderListPage() {
           )}
           {hasPermission("Order-delete") && (
             <button
-              onClick={() => handleDelete(row.id)}
+              onClick={() => handleDeleteClick(row)}
               className="p-1.5 bg-rose-500 hover:bg-rose-400 text-white rounded-lg transition-all shadow-sm"
-              title="Delete Order"
+              title="Delete"
             >
               <FiTrash2 className="w-3.5 h-3.5" />
             </button>
@@ -504,10 +522,8 @@ export default function OrderListPage() {
     }
   ];
 
-  // Helper renderer for Modal Body shared between Edit and Repeat
   const renderModalBody = () => (
     <div className="space-y-6 text-left">
-      {/* Payment Type */}
       <div className="space-y-2">
         <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
           Payment Type
@@ -538,7 +554,6 @@ export default function OrderListPage() {
         </div>
       </div>
 
-      {/* Transaction ID & Courier */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
           label="Transaction ID"
@@ -558,7 +573,6 @@ export default function OrderListPage() {
         />
       </div>
 
-      {/* Select Products */}
       <div className="border-t border-zinc-150 pt-6 space-y-4">
         <h4 className="text-lg font-bold text-zinc-800">Choose Products to Add</h4>
         <div className="flex gap-4 items-end bg-zinc-50 p-4 rounded-xl border border-zinc-200">
@@ -585,7 +599,6 @@ export default function OrderListPage() {
         </div>
       </div>
 
-      {/* Selected Products Table */}
       <div className="space-y-4 text-left">
         <div className="flex items-center justify-between">
           <h4 className="text-base font-bold text-zinc-800">
@@ -678,10 +691,8 @@ export default function OrderListPage() {
   return (
     <div className="space-y-6">
       
-      {/* Main Container without white card background */}
       <div className="space-y-6">
         
-        {/* Header with Title and Date Range */}
         <div className="flex items-center justify-between pb-6">
           <h2 className="text-2xl font-bold text-text-primary">
             Order List
@@ -699,12 +710,12 @@ export default function OrderListPage() {
           </div>
         </div>
 
-        {/* Filter Toolbar */}
         <div className="flex flex-wrap items-center gap-3 pb-6">
           <div className="w-full sm:w-auto sm:flex-1 min-w-[160px]">
             <Select
+              multiple={true}
               value={filterProduct}
-              onChange={(e) => setFilterProduct(e.target.value)}
+              onChange={(e) => setFilterProduct(e.target.value as unknown as string[])}
               options={[
                 { value: "all", label: "Select Product" },
                 ...products.map(p => ({ value: p.name, label: p.name }))
@@ -713,18 +724,24 @@ export default function OrderListPage() {
           </div>
           <div className="w-full sm:w-auto sm:flex-1 min-w-[160px]">
             <Select
+              multiple={true}
               value={filterAssignee}
-              onChange={(e) => setFilterAssignee(e.target.value)}
+              onChange={(e) => setFilterAssignee(e.target.value as unknown as string[])}
+              disabled={!isAdmin}
               options={[
                 { value: "all", label: "Select Assign" },
-                ...users.map(u => ({ value: u.name, label: u.name }))
+                ...(isAdmin
+                  ? users
+                  : users.filter(u => u._id === currentUser?._id || u.id === currentUser?._id)
+                ).map(u => ({ value: u._id || u.id, label: u.name }))
               ]}
             />
           </div>
           <div className="w-full sm:w-auto sm:flex-1 min-w-[160px]">
             <Select
+              multiple={true}
               value={filterCourier}
-              onChange={(e) => setFilterCourier(e.target.value)}
+              onChange={(e) => setFilterCourier(e.target.value as unknown as string[])}
               options={[
                 { value: "all", label: "Select Courier" },
                 ...couriers.map(c => ({ value: c.name, label: c.name }))
@@ -737,34 +754,14 @@ export default function OrderListPage() {
               Apply Filter
             </Button>
             <Button variant="danger" className="bg-error hover:bg-error/90" onClick={() => {
-              setFilterProduct("all");
-              setFilterAssignee("all");
-              setFilterCourier("all");
+              setFilterProduct(["all"]);
+              if (isAdmin) setFilterAssignee(["all"]);
+              setFilterCourier(["all"]);
               setSearchQuery("");
               setStartDate(null);
               setEndDate(null);
-              fetchOrders({ page: 1, limit: 100 }).then(res => {
-                 const mapped = res.data.map((o: any) => ({
-                    id: o._id || o.id,
-                    leadId: o.leadId?._id || o.leadId || "",
-                    name: o.name,
-                    phone_number: o.phone_number,
-                    product: o.product || (o.products?.map((p: any) => p.name).join(", ") || ""),
-                    amount: o.amount || 0,
-                    quantity: o.quantity || 1,
-                    subtotal: o.amount || 0,
-                    grandTotal: o.grandTotal || o.amount || 0,
-                    date: o.createdAt ? new Date(o.createdAt).toISOString().split('T')[0] : "",
-                    paymentType: o.paymentType || "COD",
-                    courier: o.courier || "",
-                    assginTo: o.assginTo?.name || o.assginTo || "",
-                    assginToId: typeof o.assginTo === 'object' ? (o.assginTo?._id || o.assginTo?.id || "") : (o.assginTo || ""),
-                    transactionId: o.transactionId || "",
-                    status: o.status || "Dispatched",
-                    _products: o.products || []
-                  }));
-                  setOrders(mapped);
-              });
+              setCurrentPage(1);
+              setTimeout(() => loadOrdersData("", { start: null, end: null }, isAdmin ? "all" : (currentUser?._id || currentUser?.id), 1, rowsPerPage), 0);
             }}>
               Clear Filter
             </Button>
@@ -783,12 +780,22 @@ export default function OrderListPage() {
         <Table 
            data={filteredOrders} 
            columns={columns} 
-           selectable 
+           selectable={false}
            isLoading={isFetchingData} 
            searchable={true}
            onSearchChange={(val) => {
              setSearchQuery(val);
-             loadOrdersData(val);
+             setCurrentPage(1);
+             loadOrdersData(val, undefined, undefined, 1, rowsPerPage);
+           }}
+           serverSide={true}
+           totalCount={totalRecords}
+           currentPage={currentPage}
+           rowsPerPage={rowsPerPage}
+           onPageChange={(page, limit) => {
+             setCurrentPage(page);
+             setRowsPerPage(limit);
+             loadOrdersData(undefined, undefined, undefined, page, limit);
            }}
         />
       </div>
@@ -850,6 +857,15 @@ export default function OrderListPage() {
           </div>
         </form>
       </Modal>
+
+      <DeleteConfirmModal
+        isOpen={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={executeDelete}
+        title="Delete Order"
+        itemName={orderToDelete?.name}
+        itemType="order"
+      />
     </div>
   );
 }

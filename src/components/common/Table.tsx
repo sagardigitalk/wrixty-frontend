@@ -168,7 +168,7 @@ export function Table<T extends Record<string, any>>({
     <div className="w-full flex flex-col overflow-hidden transition-all">
       {/* Search Header */}
       {searchable && (
-        <div className="p-4 flex flex-col sm:flex-row gap-3 items-center justify-between">
+        <div className="pb-4 flex flex-col sm:flex-row gap-3 items-center justify-between">
           <div className="relative w-full sm:max-w-xs">
             <input
               type="text"

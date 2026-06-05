@@ -11,6 +11,7 @@ interface ModalProps {
   children: React.ReactNode;
   sizeClass?: string;
   isLoading?: boolean;
+  overflowVisible?: boolean;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -19,7 +20,8 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   children,
   sizeClass = "max-w-lg",
-  isLoading = false
+  isLoading = false,
+  overflowVisible = false
 }) => {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -62,7 +64,7 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="relative p-6 overflow-y-auto flex-1 text-left text-sm text-text-primary">
+        <div className={`relative p-6 flex-1 text-left text-sm text-text-primary ${overflowVisible ? 'overflow-visible' : 'overflow-y-auto'}`}>
           {isLoading && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-card-bg/60 backdrop-blur-[2px]">
               <Loader size="lg" className="text-primary-teal mb-4" />

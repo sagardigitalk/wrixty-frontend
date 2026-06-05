@@ -270,7 +270,7 @@ export default function UsersPage() {
         permissions: permissions
       });
       toast.success(`Logged in as ${user.name}`);
-      window.location.href = "/dashboard";
+      window.open("/dashboard", "_blank");
     } catch (err) {
       console.error("Login-as permissions load failed:", err);
       setAuthData({
@@ -280,7 +280,7 @@ export default function UsersPage() {
         permissions: {}
       });
       toast.success(`Logged in as ${user.name}`);
-      window.location.href = "/dashboard";
+      window.open("/dashboard", "_blank");
     }
   };
 
@@ -417,7 +417,7 @@ export default function UsersPage() {
       </div>
 
       {/* Add User Modal */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Add User" sizeClass="max-w-4xl">
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Add User" sizeClass="max-w-4xl" overflowVisible={true}>
         <form onSubmit={handleCreate} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pb-24">
             {/* Left Column */}
@@ -491,7 +491,7 @@ export default function UsersPage() {
       </Modal>
 
       {/* Edit User Modal */}
-      <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit User Details" sizeClass="max-w-4xl">
+      <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit User Details" sizeClass="max-w-4xl" overflowVisible={true}>
         <form onSubmit={handleEditSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pb-24">
             {/* Left Column */}

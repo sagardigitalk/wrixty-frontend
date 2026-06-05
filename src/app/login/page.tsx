@@ -7,10 +7,13 @@ import { Button } from "../../components/common/Button";
 import { loginUser } from "../../services/authService";
 import { useToast } from "../../context/ToastContext";
 import { isAuthenticated } from "../../utils/authUtils";
+import { useSettings } from "../../context/SettingsContext";
+import { Spa } from "@mui/icons-material";
 
 export default function LoginPage() {
   const router = useRouter();
   const toast = useToast();
+  const { settings } = useSettings();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -55,13 +58,17 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md relative z-10">
         <div className="bg-card-bg border border-border-ui p-10 rounded-lg shadow-soft text-center space-y-8">
-          <div className="space-y-3">
-            <div className="w-14 h-14 mx-auto rounded-lg bg-gradient-primary flex items-center justify-center font-black text-white text-xl shadow-md tracking-wider">
-              CRM
+          <div className="space-y-4">
+            <div className="flex flex-col items-center justify-center gap-3">
+              {settings.appLogo ? (
+                <img src={settings.appLogo} alt="Logo" className="w-20 h-20 object-contain drop-shadow-md" />
+              ) : (
+                <Spa className="text-primary-teal w-12 h-12" />
+              )}
+              <span className="font-extrabold text-3xl tracking-wider text-gradient-primary font-sans">
+                {settings.appName}
+              </span>
             </div>
-            <h1 className="text-2xl font-black tracking-widest text-gradient-primary uppercase">
-              CRM
-            </h1>
             <p className="text-sm text-text-secondary font-semibold tracking-wider uppercase">
               Sign In to Your Account
             </p>

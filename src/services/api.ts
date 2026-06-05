@@ -22,13 +22,33 @@ api.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
+const pendingGetRequests = new Map();
+
 // Helper: GET /endpoint
-export const apiGet = (endpoint: string, params?: object) =>
-  api.get(endpoint, { params });
+export const apiGet = (endpoint: string, params?: object) => {
+  const requestKey = `${endpoint}?${JSON.stringify(params || {})}`;
+  if (pendingGetRequests.has(requestKey)) {
+    return pendingGetRequests.get(requestKey);
+  }
+  const promise = api.get(endpoint, { params }).finally(() => {
+    pendingGetRequests.delete(requestKey);
+  });
+  pendingGetRequests.set(requestKey, promise);
+  return promise;
+};
 
 // Helper: GET /endpoint/:id
-export const apiGetById = (endpoint: string, id: string) =>
-  api.get(`${endpoint}/${id}`);
+export const apiGetById = (endpoint: string, id: string) => {
+  const requestKey = `${endpoint}/${id}`;
+  if (pendingGetRequests.has(requestKey)) {
+    return pendingGetRequests.get(requestKey);
+  }
+  const promise = api.get(`${endpoint}/${id}`).finally(() => {
+    pendingGetRequests.delete(requestKey);
+  });
+  pendingGetRequests.set(requestKey, promise);
+  return promise;
+};
 
 // Helper: POST /endpoint
 export const apiPost = (endpoint: string, body: object) =>

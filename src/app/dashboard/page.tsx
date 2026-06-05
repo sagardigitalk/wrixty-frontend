@@ -16,8 +16,8 @@ export default function DashboardPage() {
 
   // Date filters
   const today = new Date().toISOString().split("T")[0];
-  const [startDate, setStartDate] = useState(today);
-  const [endDate, setEndDate] = useState(today);
+  const [startDate, setStartDate] = useState<string | null>(today);
+  const [endDate, setEndDate] = useState<string | null>(today);
 
   // Modal State
   const [selectedStaff, setSelectedStaff] = useState<any>(null);

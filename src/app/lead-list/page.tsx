@@ -9,6 +9,7 @@ import { fetchLeads, updateLeadApi, deleteLeadApi, exportLeads } from "../../ser
 import { createOrderApi } from "../../services/orderService";
 import { fetchReasonToCalls } from "../../services/reasonToCallService";
 import { fetchCouriers } from "../../services/courierService";
+import { formatDateTime } from "../../utils/dateUtils";
 
 export interface Lead {
   id: string;
@@ -36,6 +37,7 @@ import { getAuthenticatedUser } from "../../utils/authUtils";
 import { Table, Column } from "../../components/common/Table";
 import { usePermission } from "../../utils/permissionUtils";
 import { Modal } from "../../components/common/Modal";
+import { DeleteConfirmModal } from "../../components/common/DeleteConfirmModal";
 import { Input } from "../../components/common/Input";
 import { Select } from "../../components/common/Select";
 import { Button } from "../../components/common/Button";
@@ -64,6 +66,9 @@ export default function LeadListPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
   
   const getTodayString = () => {
     const d = new Date();
@@ -73,22 +78,24 @@ export default function LeadListPage() {
   const [startDate, setStartDate] = useState<string | null>(getTodayString());
   const [endDate, setEndDate] = useState<string | null>(getTodayString());
 
-  const loadLeadsData = async (overrideAssignee?: string, overrideSearch?: string, overrideDates?: { start: string | null, end: string | null }) => {
+  const loadLeadsData = async (overrideAssignee?: string, overrideSearch?: string, overrideDates?: { start: string | null, end: string | null }, overridePage?: number, overrideLimit?: number) => {
     setIsFetchingData(true);
     try {
-      const assigneeFilter = overrideAssignee === 'all' ? undefined : (overrideAssignee || (filterAssignee !== 'all' ? filterAssignee : undefined));
+      const assigneeFilter = overrideAssignee === 'all' ? undefined : (overrideAssignee || (filterAssignee.includes('all') ? undefined : filterAssignee.join(',')));
       const searchToUse = overrideSearch !== undefined ? overrideSearch : searchQuery;
       const startToUse = overrideDates !== undefined ? overrideDates.start : startDate;
       const endToUse = overrideDates !== undefined ? overrideDates.end : endDate;
+      const pageToUse = overridePage !== undefined ? overridePage : currentPage;
+      const limitToUse = overrideLimit !== undefined ? overrideLimit : rowsPerPage;
       
       const leadsRes = await fetchLeads({
-        page: 1,
-        limit: 100,
+        page: pageToUse,
+        limit: limitToUse,
         search: searchToUse || undefined,
-        product: filterProduct !== 'all' ? filterProduct : undefined,
+        product: filterProduct.includes('all') ? undefined : filterProduct.join(','),
         assgin: assigneeFilter,
-        status: filterStatus !== 'all' ? filterStatus : undefined,
-        reason_call: filterReason !== 'all' ? filterReason : undefined,
+        status: filterStatus.includes('all') ? undefined : filterStatus.join(','),
+        reason_call: filterReason.includes('all') ? undefined : filterReason.join(','),
         startDate: startToUse || undefined,
         endDate: endToUse || undefined
       });
@@ -103,19 +110,7 @@ export default function LeadListPage() {
         subtotal: l.subtotal || (l.products?.length ? l.products.reduce((acc: number, p: any) => acc + (p.subtotal || (p.amount * (p.quantity || 1)) || 0), 0) : (l.amount || 0)),
         assgin: l.assgin?.name || l.assgin || "",
         assginId: l.assgin?._id || l.assgin || "",
-        date: l.createdAt ? (() => {
-          const d = new Date(l.createdAt);
-          const day = String(d.getDate()).padStart(2, '0');
-          const month = String(d.getMonth() + 1).padStart(2, '0');
-          const year = String(d.getFullYear()).slice(-2);
-          return `${day}/${month}/${year}`;
-        })() : (() => {
-          const d = new Date();
-          const day = String(d.getDate()).padStart(2, '0');
-          const month = String(d.getMonth() + 1).padStart(2, '0');
-          const year = String(d.getFullYear()).slice(-2);
-          return `${day}/${month}/${year}`;
-        })(),
+        date: formatDateTime(l.createdAt || new Date()),
         time: l.createdAt ? new Date(l.createdAt).toTimeString().split(' ')[0].substring(0, 5) : "",
         status: l.status?.name || l.status || "Open",
         statusId: l.status?._id || l.status || "",
@@ -126,6 +121,12 @@ export default function LeadListPage() {
         products: l.products || []
       }));
       setLeads(mappedLeads);
+      if (leadsRes.total !== undefined) {
+        setTotalRecords(leadsRes.total);
+      } else if (leadsRes.data) {
+        // Fallback in case total isn't returned
+        setTotalRecords(leadsRes.data.length);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -133,7 +134,12 @@ export default function LeadListPage() {
     }
   };
 
+  const initFetchRef = React.useRef(false);
+
   React.useEffect(() => {
+    if (initFetchRef.current) return;
+    initFetchRef.current = true;
+
     const loadMasterData = async () => {
       try {
         const [usersRes, prodsRes, statusRes, reasonRes, couriersRes] = await Promise.all([
@@ -160,7 +166,7 @@ export default function LeadListPage() {
       setIsAdmin(admin);
       if (!admin) {
         initialAssigneeFilter = user._id || user.id;
-        setFilterAssignee(initialAssigneeFilter);
+        setFilterAssignee([initialAssigneeFilter]);
       }
     }
 
@@ -169,7 +175,6 @@ export default function LeadListPage() {
   }, []);
 
   const updateLead = async (id: string, updated: Partial<Lead>) => {
-    // Optimistic update first — no re-fetch to avoid table blink
     setLeads(prev => prev.map(l => {
       if (l.id === id) {
         const merged = { ...l, ...updated };
@@ -184,9 +189,21 @@ export default function LeadListPage() {
       await updateLeadApi(id, updated);
       toast.success("Lead updated successfully!");
     } catch (err: any) {
-      // Revert on failure
       loadLeadsData();
       toast.error(err.response?.data?.message || "Failed to update lead");
+    }
+  };
+
+  const executeDelete = async () => {
+    if (!leadToDelete) return;
+    try {
+      await deleteLeadApi(leadToDelete.id);
+      setLeads(prev => prev.filter(l => l.id !== leadToDelete.id));
+      toast.success("Lead deleted successfully!");
+      setDeleteOpen(false);
+      setLeadToDelete(null);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to delete lead");
     }
   };
 
@@ -212,8 +229,13 @@ export default function LeadListPage() {
 
   const [isFetchingData, setIsFetchingData] = useState(false);
   const [isConvertingLead, setIsConvertingLead] = useState(false);
-  const [isDeletingLead, setIsDeletingLead] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isDeletingLead, setIsDeletingLead] = useState(false);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
+  
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const [noteText, setNoteText] = useState("");
   const [convertSelectedProducts, setConvertSelectedProducts] = useState<SelectedProductRow[]>([]);
@@ -227,10 +249,10 @@ export default function LeadListPage() {
   const [assignToUserId, setAssignToUserId] = useState("");
   const [isAssigningLead, setIsAssigningLead] = useState(false);
 
-  const [filterProduct, setFilterProduct] = useState("all");
-  const [filterAssignee, setFilterAssignee] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [filterReason, setFilterReason] = useState("all");
+  const [filterProduct, setFilterProduct] = useState<string[]>(["all"]);
+  const [filterAssignee, setFilterAssignee] = useState<string[]>(["all"]);
+  const [filterStatus, setFilterStatus] = useState<string[]>(["all"]);
+  const [filterReason, setFilterReason] = useState<string[]>(["all"]);
 
   const filteredLeads = React.useMemo(() => {
     return leads.filter(l => !l.isDeleted);
@@ -250,6 +272,11 @@ export default function LeadListPage() {
     setNoteModalOpen(false);
   };
 
+  const handleDeleteClick = (lead: Lead) => {
+    setLeadToDelete(lead);
+    setDeleteOpen(true);
+  };
+
   const handleBulkAssign = async () => {
     if (!assignToUserId) {
       toast.warning("Please select a user to assign!");
@@ -258,7 +285,6 @@ export default function LeadListPage() {
     setIsAssigningLead(true);
     try {
       await Promise.all(selectedIds.map(id => updateLeadApi(id, { assgin: assignToUserId })));
-      // Update local table: set assgin name from users list
       const assignedUser = users.find((u: any) => (u._id || u.id) === assignToUserId);
       setLeads(prev => prev.map(l =>
         selectedIds.includes(l.id)
@@ -276,13 +302,22 @@ export default function LeadListPage() {
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDeleteClick = () => {
+    if (selectedIds.length === 0) {
+      toast.warning("Please select at least one lead to delete!");
+      return;
+    }
+    setBulkDeleteOpen(true);
+  };
+
+  const executeBulkDelete = async () => {
     setIsDeletingLead(true);
     try {
       await Promise.all(selectedIds.map(id => deleteLeadApi(id)));
       setLeads(prev => prev.filter(l => !selectedIds.includes(l.id)));
-      toast.warning(`Deleted ${selectedIds.length} lead records.`);
+      toast.success(`${selectedIds.length} leads deleted successfully!`);
       setSelectedIds([]);
+      setBulkDeleteOpen(false);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Bulk delete failed");
     } finally {
@@ -392,13 +427,13 @@ export default function LeadListPage() {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const assigneeFilter = filterAssignee !== 'all' ? filterAssignee : undefined;
+      const assigneeFilter = filterAssignee.includes('all') ? undefined : filterAssignee.join(',');
       const blob = await exportLeads({
         search: searchQuery || undefined,
-        product: filterProduct !== 'all' ? filterProduct : undefined,
+        product: filterProduct.includes('all') ? undefined : filterProduct.join(','),
         assgin: assigneeFilter,
-        status: filterStatus !== 'all' ? filterStatus : undefined,
-        reason_call: filterReason !== 'all' ? filterReason : undefined,
+        status: filterStatus.includes('all') ? undefined : filterStatus.join(','),
+        reason_call: filterReason.includes('all') ? undefined : filterReason.join(','),
         startDate: startDate || undefined,
         endDate: endDate || undefined
       });
@@ -429,21 +464,19 @@ export default function LeadListPage() {
       key: "status",
       header: "Status",
       render: (val, row) => {
+        const isSuccess = val === "Inprogress" || val === "In-Progress";
+        const isError = val === "Close" || val === "Closed";
+        
         return (
-          <select
-            value={(row as any).statusId || val || ""}
-            onChange={(e) => updateLead(row.id, { status: e.target.value as string })}
-            className={`text-[11px] font-bold rounded-lg px-2 py-1 outline-none border cursor-pointer appearance-none transition-all ${val === "Inprogress" || val === "In-Progress"
-                ? "bg-success/10 text-success border-success/20"
-                : val === "Close" || val === "Closed"
-                  ? "bg-error/10 text-error border-error/20"
-                  : "bg-warning/10 text-warning border-warning/20"
-              }`}
-          >
-            {statuses.map(s => (
-              <option key={s._id || s.id} value={s._id || s.id}>{s.name}</option>
-            ))}
-          </select>
+          <div className="w-[130px]">
+            <Select
+              value={(row as any).statusId || val || ""}
+              onChange={(e) => updateLead(row.id, { status: e.target.value as string })}
+              options={statuses.map(s => ({ value: s._id || s.id, label: s.name }))}
+              placeholder="Status"
+              menuPortalTarget={true}
+            />
+          </div>
         );
       }
     },
@@ -451,16 +484,15 @@ export default function LeadListPage() {
       key: "reason_call",
       header: "Reason Call",
       render: (val, row) => (
-        <select
-          value={(row as any).reasonCallId || val || ""}
-          onChange={(e) => updateLead(row.id, { reason_call: e.target.value as string })}
-          className="px-2.5 py-1.5 bg-background text-text-secondary rounded-lg font-semibold text-xs border border-border-ui/50 outline-none cursor-pointer appearance-none hover:border-primary-teal transition-all"
-        >
-          <option value="">{val || "Select"}</option>
-          {reasonsOptions.map(r => (
-            <option key={r._id || r.id} value={r._id || r.id}>{r.name}</option>
-          ))}
-        </select>
+        <div className="w-[160px]">
+          <Select
+            value={(row as any).reasonCallId || val || ""}
+            onChange={(e) => updateLead(row.id, { reason_call: e.target.value as string })}
+            options={reasonsOptions.map(r => ({ value: r._id || r.id, label: r.name }))}
+            placeholder="Select Reason"
+            menuPortalTarget={true}
+          />
+        </div>
       )
     },
     {
@@ -514,7 +546,7 @@ export default function LeadListPage() {
           )}
           {hasPermission("Lead-delete") && (
             <button
-              onClick={() => deleteLead(row.id)}
+              onClick={() => handleDeleteClick(row)}
               className="p-1.5 bg-rose-500 hover:bg-rose-400 text-white rounded-lg transition-all shadow-sm"
               title="Delete Lead"
             >
@@ -579,8 +611,9 @@ export default function LeadListPage() {
         <div className="flex flex-wrap items-center gap-3 pb-6">
           <div className="w-full sm:w-auto sm:flex-1 min-w-[160px]">
             <Select
+              multiple={true}
               value={filterProduct}
-              onChange={(e) => setFilterProduct(e.target.value)}
+              onChange={(e) => setFilterProduct(e.target.value as unknown as string[])}
               options={[
                 { value: "all", label: "Select Product" },
                 ...products.map(p => ({ value: p._id || p.id, label: p.name }))
@@ -589,8 +622,9 @@ export default function LeadListPage() {
           </div>
           <div className="w-full sm:w-auto sm:flex-1 min-w-[160px]">
             <Select
+              multiple={true}
               value={filterAssignee}
-              onChange={(e) => setFilterAssignee(e.target.value)}
+              onChange={(e) => setFilterAssignee(e.target.value as unknown as string[])}
               disabled={!isAdmin}
               options={[
                 { value: "all", label: "Select Assign" },
@@ -603,8 +637,9 @@ export default function LeadListPage() {
           </div>
           <div className="w-full sm:w-auto sm:flex-1 min-w-[160px]">
             <Select
+              multiple={true}
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
+              onChange={(e) => setFilterStatus(e.target.value as unknown as string[])}
               options={[
                 { value: "all", label: "Select Status" },
                 ...statuses.map(s => ({ value: s._id || s.id, label: s.name }))
@@ -613,8 +648,9 @@ export default function LeadListPage() {
           </div>
           <div className="w-full sm:w-auto sm:flex-1 min-w-[160px]">
             <Select
+              multiple={true}
               value={filterReason}
-              onChange={(e) => setFilterReason(e.target.value)}
+              onChange={(e) => setFilterReason(e.target.value as unknown as string[])}
               options={[
                 { value: "all", label: "Reason Call" },
                 ...reasonsOptions.map(r => ({ value: r._id || r.id, label: r.name }))
@@ -634,10 +670,10 @@ export default function LeadListPage() {
               variant="outline"
               className="rounded-lg"
               onClick={() => {
-                setFilterProduct("all");
-                if (isAdmin) setFilterAssignee("all");
-                setFilterStatus("all");
-                setFilterReason("all");
+                setFilterProduct(["all"]);
+                if (isAdmin) setFilterAssignee(["all"]);
+                setFilterStatus(["all"]);
+                setFilterReason(["all"]);
                 setStartDate(null);
                 setEndDate(null);
                 setTimeout(() => loadLeadsData(isAdmin ? "all" : (currentUser?._id || currentUser?.id)), 0);
@@ -689,14 +725,12 @@ export default function LeadListPage() {
                 </Button>
               )}
               {hasPermission("Lead-delete") && (
-                <Button
-                  variant="danger"
-                  size="sm"
-                  className="rounded-lg"
-                  onClick={handleBulkDelete}
-                  isLoading={isDeletingLead}
+                <Button 
+                  variant="danger" 
+                  className="text-xs bg-rose-500 hover:bg-rose-400" 
+                  onClick={handleBulkDeleteClick}
                 >
-                  <FiTrash2 className="w-4 h-4 mr-2" /> Bulk Delete
+                  <FiTrash2 className="w-4 h-4 mr-2" /> Bulk Delete ({selectedIds.length})
                 </Button>
               )}
             </div>
@@ -713,14 +747,24 @@ export default function LeadListPage() {
           searchable={true}
           onSearchChange={(val) => {
             setSearchQuery(val);
+            setCurrentPage(1);
             // Table component already debounces 400ms before calling this
-            loadLeadsData(undefined, val);
+            loadLeadsData(undefined, val, undefined, 1, rowsPerPage);
+          }}
+          serverSide={true}
+          totalCount={totalRecords}
+          currentPage={currentPage}
+          rowsPerPage={rowsPerPage}
+          onPageChange={(page, limit) => {
+            setCurrentPage(page);
+            setRowsPerPage(limit);
+            loadLeadsData(undefined, undefined, undefined, page, limit);
           }}
         />
       </div>
 
       {/* Assign Leads Modal */}
-      <Modal isOpen={assignModalOpen} onClose={() => setAssignModalOpen(false)} title="Assign Leads">
+      <Modal isOpen={assignModalOpen} onClose={() => setAssignModalOpen(false)} title="Assign Leads" overflowVisible={true}>
         <div className="space-y-5">
           {/* Selection count badge */}
           <div className="flex items-center gap-2 p-3 bg-primary-teal/5 border border-primary-teal/20 rounded-lg">
@@ -970,6 +1014,24 @@ export default function LeadListPage() {
           )}
         </form>
       </Modal>
+
+      <DeleteConfirmModal
+        isOpen={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={executeDelete}
+        title="Delete Lead"
+        itemName={leadToDelete?.name}
+        itemType="lead"
+      />
+
+      <DeleteConfirmModal
+        isOpen={bulkDeleteOpen}
+        onClose={() => setBulkDeleteOpen(false)}
+        onConfirm={executeBulkDelete}
+        title="Delete Leads"
+        itemName={`${selectedIds.length} selected leads`}
+        itemType="leads"
+      />
     </div>
   );
 }

@@ -38,7 +38,7 @@ export default function RestoreDataPage() {
         limit,
         search
       });
-      const mapped = res.data.map(l => {
+      const mapped = res.data.map((l: any) => {
         const formatDateTime = (dateStr?: string) => {
           if (!dateStr) return "N/A";
           const d = new Date(dateStr);
@@ -53,10 +53,10 @@ export default function RestoreDataPage() {
           return `${day}/${month}/${year} ${String(hr).padStart(2, '0')}:${min} ${ampm}`;
         };
 
-        const prodName = l.products?.length 
-          ? l.products.map((p: any) => p.name || (p.productId?.name)).join(" , ") 
+        const prodName = l.products?.length
+          ? l.products.map((p: any) => p.name || (p.productId?.name)).join(" , ")
           : l.product || "-";
-        
+
         const totalAmount = l.products?.length
           ? l.products.reduce((acc: number, p: any) => acc + (p.subtotal || (p.amount * (p.quantity || 1)) || 0), 0)
           : l.subtotal || l.amount || 0;
@@ -110,10 +110,10 @@ export default function RestoreDataPage() {
         </p>
       </div>
 
-      <div className="bg-card-bg border border-border-ui rounded-lg shadow-soft">
-        <Table 
-          data={leads} 
-          columns={columns} 
+      <div className="bg-card-bg  rounded-lg shadow-soft">
+        <Table
+          data={leads}
+          columns={columns}
           selectable={false}
           searchable={true}
           searchPlaceholder="Search..."

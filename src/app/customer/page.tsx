@@ -20,6 +20,9 @@ export default function CustomerPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const toast = useToast();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
 
   const [editOpen, setEditOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -29,21 +32,23 @@ export default function CustomerPage() {
   const [phone, setPhone] = useState("");
   const [formErrors, setFormErrors] = useState<{ name?: string, phone?: string }>({});
 
-  const loadCustomers = useCallback(async () => {
+  const loadCustomers = useCallback(async (searchQuery: string = "", page: number = currentPage, limit: number = rowsPerPage) => {
     try {
       setLoading(true);
-      const res = await fetchCustomers();
+      const res: any = await fetchCustomers(searchQuery, page, limit);
       if (res && Array.isArray(res.data)) {
         setCustomers(res.data);
+        if (res.total !== undefined) setTotalRecords(res.total);
       } else if (res && Array.isArray(res)) {
         setCustomers(res);
+        setTotalRecords(res.length);
       }
     } catch {
       toast.error("Failed to load customers.");
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, currentPage, rowsPerPage]);
 
   useEffect(() => {
     loadCustomers();
@@ -172,10 +177,21 @@ export default function CustomerPage() {
           data={customers}
           columns={columns}
           searchable={true}
-          searchPlaceholder="Search customers..."
+          searchPlaceholder="Search customers by name or phone..."
           idField="_id"
           isLoading={loading}
-          serverSide={false}
+          serverSide={true}
+          totalCount={totalRecords}
+          currentPage={currentPage}
+          rowsPerPage={rowsPerPage}
+          onPageChange={(page, limit) => {
+            setCurrentPage(page);
+            setRowsPerPage(limit);
+          }}
+          onSearchChange={(val) => {
+            setCurrentPage(1);
+            loadCustomers(val, 1, rowsPerPage);
+          }}
         />
       </div>
 

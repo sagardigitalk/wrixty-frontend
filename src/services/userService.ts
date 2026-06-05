@@ -32,11 +32,32 @@ export interface FetchParams {
   search?: string;
 }
 
+let cachedUsers: any = null;
+let cachedUsersTime = 0;
+let usersPromise: Promise<any> | null = null;
+const CACHE_TTL = 5 * 60 * 1000;
+
 // GET /api/users?page=&limit=&search=
 export const fetchUsers = async (params?: FetchParams): Promise<PaginatedResponse<User>> => {
+  if (params?.page === 1 && params?.limit === 100 && !params?.search) {
+    if (cachedUsers && Date.now() - cachedUsersTime < CACHE_TTL) return cachedUsers;
+    if (usersPromise) return usersPromise;
+    usersPromise = apiGet(endPointApi.users, params).then(({ data }) => {
+      cachedUsers = data;
+      cachedUsersTime = Date.now();
+      usersPromise = null;
+      return data;
+    }).catch(err => {
+      usersPromise = null;
+      throw err;
+    });
+    return usersPromise;
+  }
   const { data } = await apiGet(endPointApi.users, params);
   return data;
 };
+
+export const clearUserCache = () => { cachedUsers = null; };
 
 // GET /api/users/:id
 export const fetchUser = async (id: string): Promise<User> => {
@@ -46,6 +67,7 @@ export const fetchUser = async (id: string): Promise<User> => {
 
 // POST /api/users
 export const createUser = async (payload: CreateUserPayload | FormData): Promise<User> => {
+  clearUserCache();
   const { data } = await api.post(endPointApi.userCreate, payload, {
     headers: {
       'Content-Type': payload instanceof FormData ? 'multipart/form-data' : 'application/json',
@@ -56,6 +78,7 @@ export const createUser = async (payload: CreateUserPayload | FormData): Promise
 
 // PUT /api/users/:id
 export const updateUser = async (id: string, payload: UpdateUserPayload | FormData): Promise<User> => {
+  clearUserCache();
   const { data } = await api.put(`${endPointApi.userUpdate}/${id}`, payload, {
     headers: {
       'Content-Type': payload instanceof FormData ? 'multipart/form-data' : 'application/json',
@@ -66,6 +89,7 @@ export const updateUser = async (id: string, payload: UpdateUserPayload | FormDa
 
 // DELETE /api/users/:id
 export const deleteUser = async (id: string): Promise<void> => {
+  clearUserCache();
   await apiDelete(endPointApi.userDelete, id);
 };
 

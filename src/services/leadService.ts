@@ -8,9 +8,11 @@ export interface Lead {
   product?: string;
   amount?: number;
   quantity?: number;
-  assgin?: string;
-  status?: string;
-  reason_call?: string;
+  subtotal?: number;
+  products?: any[];
+  assgin?: any;
+  status?: any;
+  reason_call?: any;
   note?: string;
   reminder?: string;
   orderStatus?: boolean;
