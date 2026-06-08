@@ -750,18 +750,16 @@ export default function OrderListPage() {
           </div>
           
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="secondary" className="bg-primary-teal hover:bg-primary-teal/90" onClick={() => loadOrdersData()}>
+            <Button variant="primary" className="rounded-lg" onClick={() => loadOrdersData()}>
               Apply Filter
             </Button>
-            <Button variant="danger" className="bg-error hover:bg-error/90" onClick={() => {
+            <Button variant="outline" className="rounded-lg" onClick={() => {
               setFilterProduct(["all"]);
               if (isAdmin) setFilterAssignee(["all"]);
               setFilterCourier(["all"]);
               setSearchQuery("");
-              setStartDate(null);
-              setEndDate(null);
               setCurrentPage(1);
-              setTimeout(() => loadOrdersData("", { start: null, end: null }, isAdmin ? "all" : (currentUser?._id || currentUser?.id), 1, rowsPerPage), 0);
+              setTimeout(() => loadOrdersData("", undefined, isAdmin ? "all" : (currentUser?._id || currentUser?.id), 1, rowsPerPage), 0);
             }}>
               Clear Filter
             </Button>

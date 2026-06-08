@@ -475,13 +475,13 @@ export default function ReturnOrderPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="secondary" className="bg-teal-800 hover:bg-teal-700" onClick={() => loadReturnOrdersData()}>
+            <Button variant="primary" className="rounded-lg" onClick={() => loadReturnOrdersData()}>
               Apply Filter
             </Button>
-            <Button variant="danger" className="bg-rose-500 hover:bg-rose-600" onClick={() => { setFilterAssign(["all"]); setFilterType(["all"]); setFilterProduct(["all"]); setSearchQuery(""); setStartDate(null); setEndDate(null); setOrderStartDate(null); setOrderEndDate(null); setCurrentPage(1); setTimeout(() => loadReturnOrdersData("", { start: null, end: null, orderStart: null, orderEnd: null }, 1, rowsPerPage), 0); }}>
+            <Button variant="outline" className="rounded-lg" onClick={() => { setFilterAssign(["all"]); setFilterType(["all"]); setFilterProduct(["all"]); setSearchQuery(""); setCurrentPage(1); setTimeout(() => loadReturnOrdersData("", undefined, 1, rowsPerPage), 0); }}>
               Clear Filter
             </Button>
-            <Button variant="success" onClick={handleExport} isLoading={isExporting}>
+            <Button variant="outline" className="rounded-lg px-6" onClick={handleExport} isLoading={isExporting}>
               Export
             </Button>
           </div>

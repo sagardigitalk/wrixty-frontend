@@ -69,7 +69,7 @@ export default function LeadListPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalRecords, setTotalRecords] = useState(0);
-  
+
   const getTodayString = () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -87,7 +87,7 @@ export default function LeadListPage() {
       const endToUse = overrideDates !== undefined ? overrideDates.end : endDate;
       const pageToUse = overridePage !== undefined ? overridePage : currentPage;
       const limitToUse = overrideLimit !== undefined ? overrideLimit : rowsPerPage;
-      
+
       const leadsRes = await fetchLeads({
         page: pageToUse,
         limit: limitToUse,
@@ -234,7 +234,7 @@ export default function LeadListPage() {
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
-  
+
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const [noteText, setNoteText] = useState("");
@@ -466,7 +466,7 @@ export default function LeadListPage() {
       render: (val, row) => {
         const isSuccess = val === "Inprogress" || val === "In-Progress";
         const isError = val === "Close" || val === "Closed";
-        
+
         return (
           <div className="w-[130px]">
             <Select
@@ -577,16 +577,16 @@ export default function LeadListPage() {
             Lead List
           </h2>
           <div className="flex items-center gap-4">
-            <DateRangePicker 
-              startDate={startDate} 
-              endDate={endDate} 
+            <DateRangePicker
+              startDate={startDate}
+              endDate={endDate}
               onChange={(start, end) => {
                 setStartDate(start);
                 setEndDate(end);
                 loadLeadsData(undefined, undefined, { start, end });
-              }} 
+              }}
             />
-             {hasPermission("Kanban-view") && (
+            {hasPermission("Kanban-view") && (
               <button
                 onClick={() => router.push("/kanban-list")}
                 className="p-2.5 bg-white border border-border-ui/50 text-text-secondary hover:text-primary-teal hover:border-primary-teal/50 rounded-lg transition-all shadow-sm flex items-center gap-2 font-bold text-sm"
@@ -674,8 +674,6 @@ export default function LeadListPage() {
                 if (isAdmin) setFilterAssignee(["all"]);
                 setFilterStatus(["all"]);
                 setFilterReason(["all"]);
-                setStartDate(null);
-                setEndDate(null);
                 setTimeout(() => loadLeadsData(isAdmin ? "all" : (currentUser?._id || currentUser?.id)), 0);
               }}
             >
@@ -725,9 +723,9 @@ export default function LeadListPage() {
                 </Button>
               )}
               {hasPermission("Lead-delete") && (
-                <Button 
-                  variant="danger" 
-                  className="text-xs bg-rose-500 hover:bg-rose-400" 
+                <Button
+                  variant="danger"
+                  className="text-xs bg-rose-500 hover:bg-rose-400"
                   onClick={handleBulkDeleteClick}
                 >
                   <FiTrash2 className="w-4 h-4 mr-2" /> Bulk Delete ({selectedIds.length})

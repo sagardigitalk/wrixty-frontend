@@ -162,16 +162,17 @@ export default function CourierListPage() {
           </p>
         </div>
         {hasPermission("Currier-add") && (
-          <button
+          <Button
+            variant="primary"
             onClick={() => {
               setName("");
               setFormErrors({});
               setModalOpen(true);
             }}
-            className="flex items-center gap-1 py-1.5 px-3.5 bg-primary-teal hover:bg-primary-teal text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all"
+            className="flex items-center gap-1 rounded-lg"
           >
             <FiPlus className="w-4 h-4" /> Add Courier
-          </button>
+          </Button>
         )}
       </div>
 

@@ -148,16 +148,14 @@ export default function ActivityLogPage() {
             />
           </div>
 
-          <Button variant="primary" onClick={() => loadLogs()}>
+          <Button variant="primary" className="rounded-lg" onClick={() => loadLogs()}>
             Apply Filter
           </Button>
-          <Button variant="outline" onClick={() => {
+          <Button variant="outline" className="rounded-lg" onClick={() => {
             setFilterUser("all");
-            setStartDate(getTodayString());
-            setEndDate(getTodayString());
             setSearchQuery("");
             setCurrentPage(1);
-            loadLogs({ user: "all", start: getTodayString(), end: getTodayString(), search: "", page: 1 });
+            loadLogs({ user: "all", search: "", page: 1 });
           }}>
             Clear Filter
           </Button>

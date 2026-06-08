@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { isAuthenticated as checkIsAuthenticated, getAuthenticatedUser, clearAuthData } from "../../utils/authUtils";
@@ -53,6 +53,21 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
   const [teamOpen, setTeamOpen] = useState(false);
   const [masterOpen, setMasterOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setProfileDropdownOpen(false);
+      }
+    }
+    if (profileDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [profileDropdownOpen]);
 
   // Helper to check permission with Superadmin / Admin role & email bypass
   const hasPermission = (perm: string) => {
@@ -373,7 +388,7 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
             </div>
 
             {/* Exact Right Header User Info display matching screenshot */}
-            <div className="flex items-center gap-5 relative">
+            <div className="flex items-center gap-5 relative" ref={profileDropdownRef}>
               <div
                 className="flex items-center gap-3 p-1 group cursor-pointer"
                 onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
